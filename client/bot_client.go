@@ -13,7 +13,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa/types"
 	"github.com/jrevanaldi-ai/gowa/types/events"
-	"github.com/jrevanaldi-ai/gowa-bot/commands"
+	"github.com/jrevanaldi-ai/gowa-bot/commands/owner"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -26,6 +26,7 @@ type BotClient struct {
 	Cache           *helper.Cache
 	EphemeralHelper *helper.EphemeralHelper
 	Owners          map[string]bool
+	SelfMode        bool // Jika true, bot bisa merespon pesan dari diri sendiri
 	mu              sync.RWMutex
 }
 
@@ -35,6 +36,27 @@ type BotConfig struct {
 	Prefix       string
 	MaxWorkers   int
 	EnableCache  bool
+	SelfMode     bool // Jika true, bot bisa merespon pesan dari diri sendiri
+}
+
+// SetSelfMode mengatur self mode
+func (b *BotClient) SetSelfMode(mode bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.SelfMode = mode
+	
+	if mode {
+		b.Logger.Info("Self mode activated")
+	} else {
+		b.Logger.Info("Public mode activated")
+	}
+}
+
+// GetSelfMode mendapatkan status self mode
+func (b *BotClient) GetSelfMode() bool {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.SelfMode
 }
 
 // NewBotClient membuat BotClient baru
@@ -49,6 +71,7 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		Logger:   helper.NewLogger("BotClient"),
 		Cache:    helper.NewCache(),
 		Owners:   owners,
+		SelfMode: config.SelfMode,
 	}
 
 	// Init EphemeralHelper
@@ -94,9 +117,23 @@ func (b *BotClient) HandleMessage(ctx context.Context, evt *events.Message) {
 
 // processMessage memproses pesan masuk
 func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
-	// Ignore pesan dari diri sendiri
-	if evt.Info.IsFromMe {
+	// Get self mode status
+	b.mu.RLock()
+	selfMode := b.SelfMode
+	b.mu.RUnlock()
+
+	// Ignore pesan dari diri sendiri jika bukan self mode
+	if evt.Info.IsFromMe && !selfMode {
 		return
+	}
+
+	// Jika self mode aktif dan pesan dari diri sendiri, pastikan hanya owner yang bisa pakai
+	if evt.Info.IsFromMe && selfMode {
+		// Cek apakah nomor bot adalah owner
+		if !b.isOwner(evt.Info.Sender) {
+			b.Logger.Debug("Self mode: Ignoring message from non-owner self")
+			return
+		}
 	}
 
 	// Get text dari berbagai tipe pesan
@@ -214,7 +251,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 
 	// Handle exec command dengan prefix $ terlebih dahulu
 	if strings.HasPrefix(msg, "$") && isOwner {
-		args := commands.ParseExecCommand(msg)
+		args := owner.ParseExecCommand(msg)
 		if len(args) > 0 {
 			// Langsung handle exec command
 			b.handleExecCommand(ctx, evt, args)
@@ -261,6 +298,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	cmdCtx := &lib.CommandContext{
 		Ctx:         context.WithValue(ctx, "registry", b.Registry),
 		Client:      b.Client,
+		BotClient:   b, // Set BotClient reference
 		Sender:      evt.Info.Sender,
 		Chat:        evt.Info.Chat,
 		PushName:    evt.Info.PushName,

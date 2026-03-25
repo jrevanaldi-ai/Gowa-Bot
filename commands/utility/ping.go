@@ -1,4 +1,4 @@
-package commands
+package utility
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
@@ -35,7 +36,7 @@ func PingHandler(ctx *lib.CommandContext) error {
 
 	// Ukur latency real-time
 	start := time.Now()
-	sentResp, err := ctx.SendMessage(createSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+	sentResp, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
 	latency := time.Since(start).Milliseconds()
 
 	if err != nil {

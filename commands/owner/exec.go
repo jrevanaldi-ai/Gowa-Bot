@@ -1,9 +1,10 @@
-package commands
+package owner
 
 import (
 	"os/exec"
 	"strings"
 
+	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
@@ -28,7 +29,7 @@ func ExecHandler(ctx *lib.CommandContext) error {
 	// Get command dari args
 	if len(ctx.Args) == 0 {
 		message := "Usage: $<command>\nExample: $ls -la"
-		_, err := ctx.SendMessage(createSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
 		return err
 	}
 
@@ -43,7 +44,7 @@ func ExecHandler(ctx *lib.CommandContext) error {
 		if message == "" {
 			message = err.Error()
 		}
-		_, err := ctx.SendMessage(createSimpleReply("❌ Error:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply("❌ Error:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String()))
 		return err
 	}
 
@@ -52,7 +53,7 @@ func ExecHandler(ctx *lib.CommandContext) error {
 	if message == "" {
 		message = "✓ Command executed successfully (no output)"
 	}
-	_, err = ctx.SendMessage(createSimpleReply("✓ Output:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String()))
+	_, err = ctx.SendMessage(helper.CreateSimpleReply("✓ Output:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String()))
 	return err
 }
 

@@ -15,7 +15,10 @@ import (
 	waLog "github.com/jrevanaldi-ai/gowa/util/log"
 
 	"github.com/jrevanaldi-ai/gowa-bot/client"
-	"github.com/jrevanaldi-ai/gowa-bot/commands"
+	"github.com/jrevanaldi-ai/gowa-bot/commands/debug"
+	general "github.com/jrevanaldi-ai/gowa-bot/commands/general"
+	"github.com/jrevanaldi-ai/gowa-bot/commands/owner"
+	"github.com/jrevanaldi-ai/gowa-bot/commands/utility"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -25,6 +28,7 @@ var (
 	pairCode = flag.String("pair", "", "Pairing code (8 karakter)")
 	phone    = flag.String("phone", "", "Nomor telepon untuk pairing (format: 62xxx)")
 	dbPath   = flag.String("db", "gowa-bot.db", "Path ke database file")
+	selfMode = flag.Bool("self", false, "Self mode - bot merespon pesan dari diri sendiri")
 )
 
 func main() {
@@ -49,6 +53,7 @@ func main() {
 		Prefix:      ".",
 		MaxWorkers:  10,
 		EnableCache: true,
+		SelfMode:    *selfMode,
 	})
 
 	// Connect to WhatsApp
@@ -83,19 +88,25 @@ func main() {
 // registerCommands mendaftarkan semua command ke registry
 func registerCommands(registry *lib.CommandRegistry) {
 	// Register ping command
-	registry.Register(commands.PingMetadata, commands.PingHandler)
+	registry.Register(utility.PingMetadata, utility.PingHandler)
+
+	// Register fetch command
+	registry.Register(utility.FetchMetadata, utility.FetchHandler)
 
 	// Register menu command
-	registry.Register(commands.MenuMetadata, commands.MenuHandler)
+	registry.Register(general.MenuMetadata, general.MenuHandler)
 
 	// Register help command
-	registry.Register(commands.HelpMetadata, commands.HelpHandler)
+	registry.Register(general.HelpMetadata, general.HelpHandler)
 
 	// Register checkephemeral command (debug)
-	registry.Register(commands.CheckEphemeralMetadata, commands.CheckEphemeralHandler)
+	registry.Register(debug.CheckEphemeralMetadata, debug.CheckEphemeralHandler)
 
 	// Register exec command (owner only)
-	registry.Register(commands.ExecMetadata, commands.ExecHandler)
+	registry.Register(owner.ExecMetadata, owner.ExecHandler)
+
+	// Register setmode command (owner only)
+	registry.Register(owner.SetmodeMetadata, owner.SetmodeHandler)
 }
 
 // getOwnerNumbers mendapatkan daftar nomor owner dari environment variable

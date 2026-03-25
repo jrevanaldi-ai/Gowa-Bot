@@ -125,6 +125,7 @@ Saat pertama kali menjalankan bot, Anda perlu melakukan **pairing**:
 | `-pair` | Pairing code custom (opsional) | `-pair ABCD1234` |
 | `-db` | Path database SQLite | `-db ./data/bot.db` |
 | `-log-level` | Level logging | `-log-level debug` |
+| `-self` | Self mode - bot merespon pesan sendiri | `-self` |
 
 ---
 
@@ -138,6 +139,7 @@ Bot ini menggunakan **prefix** `.` untuk command. Owner dapat menggunakan comman
 |---------|-------|-----------|--------|
 | `.menu` | `.m`, `.h` | Tampilkan daftar command | `.menu` |
 | `.ping` | `.p` | Cek latency bot | `.ping` |
+| `.fetch` | `.curl`, `.http` | HTTP request (GET/POST) | `.fetch https://api.github.com` |
 | `.help` | `.info` | Lihat detail command | `.help ping` |
 
 ### Owner Only Commands
@@ -146,6 +148,20 @@ Bot ini menggunakan **prefix** `.` untuk command. Owner dapat menggunakan comman
 |---------|-------|-----------|--------|
 | `$` | `exec` | Eksekusi shell command | `$ls -la` |
 | `.checkephemeral` | `.ce` | Cek status ephemeral group | `.checkephemeral` |
+| `.setmode` | `.mode` | **Set mode bot (self/public)** | `.setmode self` |
+
+### Mode Bot
+
+Bot ini memiliki 2 mode operasi:
+
+| Mode | Deskripsi | Cara Aktivasi |
+|------|-----------|---------------|
+| **Public Mode** (Default) | Bot hanya merespon pesan dari user lain | `.setmode public` |
+| **Self Mode** | Bot merespon pesan dari diri sendiri **hanya jika nomor bot terdaftar sebagai owner** | `.setmode self` |
+
+> 💡 **Tips:** Owner bisa mengganti mode kapan saja langsung dari WhatsApp tanpa perlu restart bot!
+>
+> 🔒 **Keamanan:** Self mode dirancang untuk testing/development. Hanya owner yang bisa menggunakan command `.setmode`. Jika nomor bot tidak terdaftar sebagai owner, self mode tidak akan berfungsi.
 
 ### Contoh Penggunaan
 
@@ -207,6 +223,39 @@ drwxr-xr-x 12 user user 4096 Mar 23 09:00 ..
 </details>
 
 <details>
+<summary><b>🌐 Fetch Command</b></summary>
+
+```
+Kirim: .fetch https://api.github.com/users/octocat
+
+Output:
+✅ Response from api.github.com
+
+┌─⦿ Status
+│ • Code: 200 ✓ OK
+│ • Protocol: HTTP/2.0
+│ • Latency: 245 ms
+└──────────────
+
+┌─⦿ Headers
+│ • Content-Type: application/json
+│ • Server: GitHub.com
+└──────────────
+
+┌─⦿ Body
+│ ```
+{
+  "login": "octocat",
+  "id": 1,
+  ...
+}
+```
+└──────────────
+```
+
+</details>
+
+<details>
 <summary><b>ℹ️ Help Command</b></summary>
 
 ```
@@ -238,6 +287,7 @@ Output:
 | `GOWA_BOT_OWNERS` | Daftar nomor owner (comma separated) | - | ✅ Ya |
 | `GOWA_BOT_DB` | Path database SQLite | `gowa-bot.db` | ❌ Tidak |
 | `GOWA_BOT_LOG_LEVEL` | Level logging (debug/info/warn/error) | `info` | ❌ Tidak |
+| `GOWA_BOT_SELF_MODE` | Self mode (true/false) | `false` | ❌ Tidak |
 
 ### Format Nomor Owner
 
@@ -268,12 +318,16 @@ gowa-bot/
 │   └── bot_client.go       # Wrapper WhatsApp client
 │
 ├── 📂 commands/
-│   ├── ping.go             # Command ping
-│   ├── menu.go             # Command menu
-│   ├── help.go             # Command help
-│   ├── exec.go             # Command exec (owner)
-│   ├── reply.go            # Helper reply message
-│   └── checkephemeral.go   # Command debug ephemeral
+│   ├── 📂 general/           # Command utama
+│   │   ├── menu.go           # Command menu
+│   │   └── help.go           # Command help
+│   ├── 📂 utility/           # Command utilitas
+│   │   └── ping.go           # Command ping
+│   ├── 📂 owner/             # Command khusus owner
+│   │   └── exec.go           # Command exec shell
+│   ├── 📂 debug/             # Command debugging
+│   │   └── checkephemeral.go # Cek ephemeral group
+│   └── reply.go              # Helper reply message
 │
 ├── 📂 helper/
 │   ├── logger.go           # Logger dengan warna
@@ -291,11 +345,11 @@ gowa-bot/
 
 ### Menambah Command Baru
 
-1. Buat file baru di folder `commands/`:
+1. Buat file baru di folder `commands/` sesuai kategori:
 
 ```go
-// commands/halo.go
-package commands
+// commands/utility/halo.go
+package utility
 
 import "github.com/jrevanaldi-ai/gowa-bot/lib"
 
@@ -311,7 +365,7 @@ var HaloMetadata = &lib.CommandMetadata{
 
 func HaloHandler(ctx *lib.CommandContext) error {
     message := "Halo! Apa kabar? 👋"
-    _, err := ctx.SendMessage(createSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+    _, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
     return err
 }
 ```
@@ -319,10 +373,15 @@ func HaloHandler(ctx *lib.CommandContext) error {
 2. Daftarkan di `main.go`:
 
 ```go
+import (
+    // ...
+    "github.com/jrevanaldi-ai/gowa-bot/commands/utility"
+)
+
 func registerCommands(registry *lib.CommandRegistry) {
     // ... existing commands
     
-    registry.Register(commands.HaloMetadata, commands.HaloHandler)
+    registry.Register(utility.HaloMetadata, utility.HaloHandler)
 }
 ```
 

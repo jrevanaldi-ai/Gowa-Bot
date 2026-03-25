@@ -1,4 +1,4 @@
-package commands
+package general
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 func createReplyMessage(text string, replyToMsgID string, senderJID string, externalAdReply *waE2E.ContextInfo_ExternalAdReplyInfo) *waE2E.Message {
 	// RemoteJID untuk reply
 	remoteJID := senderJID
-	
+
 	return &waE2E.Message{
 		ExtendedTextMessage: &waE2E.ExtendedTextMessage{
 			Text: &text,

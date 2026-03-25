@@ -8,6 +8,12 @@ import (
 	"github.com/jrevanaldi-ai/gowa/types"
 )
 
+// BotClientInterface adalah interface untuk BotClient
+type BotClientInterface interface {
+	SetSelfMode(mode bool)
+	GetSelfMode() bool
+}
+
 // CommandMetadata adalah metadata untuk setiap fitur/command
 type CommandMetadata struct {
 	Cmd       string   // Nama command utama
@@ -23,6 +29,7 @@ type CommandMetadata struct {
 type CommandContext struct {
 	Ctx              context.Context
 	Client           *gowa.Client
+	BotClient        BotClientInterface // Reference ke BotClient untuk fitur advanced
 	Sender           types.JID
 	Chat             types.JID
 	PushName         string

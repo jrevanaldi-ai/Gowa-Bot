@@ -1,9 +1,10 @@
-package commands
+package general
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
@@ -38,7 +39,7 @@ func HelpHandler(ctx *lib.CommandContext) error {
 	if !found {
 		message := fmt.Sprintf("❌ Command *%s* tidak ditemukan!\n\n"+
 			"Gunakan .menu untuk melihat daftar command yang tersedia.", cmdName)
-		_, err := ctx.SendMessage(createSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
 		return err
 	}
 
@@ -85,7 +86,7 @@ func HelpHandler(ctx *lib.CommandContext) error {
 	message := helpBuilder.String()
 
 	// Kirim pesan dengan reply
-	_, err := ctx.SendMessage(createSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+	_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
 	if err != nil {
 		return fmt.Errorf("failed to send help: %w", err)
 	}

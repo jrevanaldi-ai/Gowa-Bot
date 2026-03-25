@@ -2,7 +2,7 @@ module github.com/jrevanaldi-ai/gowa-bot
 
 go 1.25
 
-replace github.com/jrevanaldi-ai/gowa => /data/data/com.termux/files/home/gowa-lib
+replace github.com/jrevanaldi-ai/gowa => ./gowa-lib
 
 require (
 	github.com/jrevanaldi-ai/gowa v0.0.0
