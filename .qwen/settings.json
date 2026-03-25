@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(go *)",
-      "Bash(grep *)",
-      "Read(//data/data/com.termux/files/home/gowa-lib/**)"
-    ]
-  }
-}
