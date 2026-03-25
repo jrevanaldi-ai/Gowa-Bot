@@ -1,6 +1,6 @@
 module github.com/jrevanaldi-ai/gowa-bot
 
-go 1.23.0
+go 1.25
 
 replace github.com/jrevanaldi-ai/gowa => /data/data/com.termux/files/home/gowa-lib
 
