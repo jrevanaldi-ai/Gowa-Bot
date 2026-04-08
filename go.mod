@@ -1,12 +1,13 @@
 module github.com/jrevanaldi-ai/gowa-bot
 
-go 1.25
+go 1.25.0
 
 replace github.com/jrevanaldi-ai/gowa => ./gowa-lib
 
 require (
 	github.com/jrevanaldi-ai/gowa v0.0.0
 	github.com/mattn/go-sqlite3 v1.14.34
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -27,5 +28,4 @@ require (
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 )
