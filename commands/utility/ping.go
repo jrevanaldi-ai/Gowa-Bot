@@ -34,9 +34,12 @@ func PingHandler(ctx *lib.CommandContext) error {
 		"└──────────────",
 		getUptime())
 
+	// Buat pesan dengan reply
+	replyMsg := helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
+	
 	// Ukur latency real-time
 	start := time.Now()
-	sentResp, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+	sentResp, err := ctx.SendMessage(replyMsg)
 	latency := time.Since(start).Milliseconds()
 
 	if err != nil {

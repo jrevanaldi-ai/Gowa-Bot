@@ -50,7 +50,7 @@ func FetchHandler(ctx *lib.CommandContext) error {
 		message := "❌ URL tidak boleh kosong!\n\n" +
 			"Contoh:\n" +
 			"• `.fetch https://api.github.com`"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -59,7 +59,7 @@ func FetchHandler(ctx *lib.CommandContext) error {
 		message := "❌ URL harus dimulai dengan http:// atau https://\n\n" +
 			"Contoh:\n" +
 			"• `.fetch https://api.github.com`"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -188,7 +188,7 @@ func showFetchHelp(ctx *lib.CommandContext) error {
 		"• 🎥 *Video:* MP4, WebM, AVI, MKV\n" +
 		"• 📄 *Document:* PDF, ZIP, TXT, DOC, XLS"
 
-	_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+	_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }
 
@@ -204,7 +204,7 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 		"└──────────────\n\n" +
 		"_Mohon tunggu..._"
 
-	loadingResp, err := ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String()))
+	loadingResp, err := ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	if err != nil {
 		return fmt.Errorf("failed to send loading message: %w", err)
 	}
@@ -250,7 +250,7 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 			fmt.Sprintf("│ • %s\n", err.Error()) +
 			"└──────────────"
 
-		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String()))
+		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil // Don't return error, just show message
 	}
 	defer resp.Body.Close()
@@ -282,7 +282,7 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 	// Jika text dan kecil, tampilkan sebagai text
 	if isTextFile(contentType, args.URL) && contentLength < 5000 {
 		responseMsg := formatFetchResponse(resp, body, latency, args.URL)
-		_, err = ctx.SendMessage(helper.CreateSimpleReply(responseMsg, ctx.MessageID, ctx.Sender.String()))
+		_, err = ctx.SendMessage(helper.CreateSimpleReply(responseMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -301,13 +301,13 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 			"└──────────────\n\n"+
 			"Gunakan `.fetch -m %s` untuk download file ini.", truncateString(args.URL, 30))
 
-		_, err = ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err = ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 	// Default: tampilkan sebagai text
 	responseMsg := formatFetchResponse(resp, body, latency, args.URL)
-	_, err = ctx.SendMessage(helper.CreateSimpleReply(responseMsg, ctx.MessageID, ctx.Sender.String()))
+	_, err = ctx.SendMessage(helper.CreateSimpleReply(responseMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }
 
@@ -601,6 +601,9 @@ func sendImageMessage(ctx *lib.CommandContext, data []byte, fileName string, lat
 		},
 	}
 
+	// Tambahkan reply context
+	imageMsg = helper.BuildReplyMessage(imageMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
+
 	_, err = ctx.SendMessage(imageMsg)
 	return err
 }
@@ -654,6 +657,9 @@ func sendVideoMessage(ctx *lib.CommandContext, data []byte, fileName string, lat
 		},
 	}
 
+	// Tambahkan reply context
+	videoMsg = helper.BuildReplyMessage(videoMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
+
 	_, err = ctx.SendMessage(videoMsg)
 	return err
 }
@@ -680,6 +686,9 @@ func sendDocumentMessage(ctx *lib.CommandContext, data []byte, fileName, content
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
 		},
 	}
+
+	// Tambahkan reply context
+	docMsg = helper.BuildReplyMessage(docMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
 
 	_, err = ctx.SendMessage(docMsg)
 	return err

@@ -29,7 +29,7 @@ func ExecHandler(ctx *lib.CommandContext) error {
 	// Get command dari args
 	if len(ctx.Args) == 0 {
 		message := "Usage: $<command>\nExample: $ls -la"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -44,7 +44,7 @@ func ExecHandler(ctx *lib.CommandContext) error {
 		if message == "" {
 			message = err.Error()
 		}
-		_, err := ctx.SendMessage(helper.CreateSimpleReply("❌ Error:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply("❌ Error:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -53,7 +53,7 @@ func ExecHandler(ctx *lib.CommandContext) error {
 	if message == "" {
 		message = "✓ Command executed successfully (no output)"
 	}
-	_, err = ctx.SendMessage(helper.CreateSimpleReply("✓ Output:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String()))
+	_, err = ctx.SendMessage(helper.CreateSimpleReply("✓ Output:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }
 

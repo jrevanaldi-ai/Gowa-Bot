@@ -24,7 +24,7 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 	// Hanya owner yang bisa menggunakan
 	if !ctx.IsOwner {
 		message := "❌ Command ini hanya untuk owner!"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -34,7 +34,7 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 			"Usage:\n" +
 			"• `.setmode self` - Aktifkan self mode\n" +
 			"• `.setmode public` - Aktifkan public mode"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -56,7 +56,7 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 			"Gunakan:\n" +
 			"• `self` - untuk self mode\n" +
 			"• `public` - untuk public mode"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -71,6 +71,6 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 		"• `.setmode self` - Aktifkan self mode\n"+
 		"• `.setmode public` - Aktifkan public mode", modeName)
 
-	_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+	_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }

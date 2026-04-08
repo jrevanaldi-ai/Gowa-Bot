@@ -93,6 +93,9 @@ func registerCommands(registry *lib.CommandRegistry) {
 	// Register fetch command
 	registry.Register(utility.FetchMetadata, utility.FetchHandler)
 
+	// Register youtube command
+	registry.Register(utility.YoutubeMetadata, utility.YoutubeHandler)
+
 	// Register menu command
 	registry.Register(general.MenuMetadata, general.MenuHandler)
 
@@ -107,6 +110,9 @@ func registerCommands(registry *lib.CommandRegistry) {
 
 	// Register setmode command (owner only)
 	registry.Register(owner.SetmodeMetadata, owner.SetmodeHandler)
+
+	// Register infoserver command (owner only)
+	registry.Register(owner.InfoserverMetadata, owner.InfoserverHandler)
 }
 
 // getOwnerNumbers mendapatkan daftar nomor owner dari environment variable

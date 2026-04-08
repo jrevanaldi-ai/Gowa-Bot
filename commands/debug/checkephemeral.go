@@ -24,7 +24,7 @@ func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 	// Hanya berfungsi di group
 	if !ctx.IsGroup {
 		message := "❌ Command ini hanya bisa digunakan di group!"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -37,7 +37,7 @@ func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 	config, err := getEphemeralConfig(ctx)
 	if err != nil {
 		message := fmt.Sprintf("❌ Error: %v", err)
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
@@ -63,7 +63,7 @@ func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 			ctx.Chat.String())
 	}
 
-	_, err = ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String()))
+	_, err = ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }
 
