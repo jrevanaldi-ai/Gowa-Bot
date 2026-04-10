@@ -17,7 +17,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// PlayMetadata adalah metadata untuk command play
+
 var PlayMetadata = &lib.CommandMetadata{
 	Cmd:       "play",
 	Tag:       "download",
@@ -28,7 +28,7 @@ var PlayMetadata = &lib.CommandMetadata{
 	Alias:     []string{"ytmp3", "yta"},
 }
 
-// PlayResponse struktur response dari API
+
 type PlayResponse struct {
 	Creator string `json:"creator"`
 	Source  string `json:"source"`
@@ -45,9 +45,9 @@ type PlayResponse struct {
 	} `json:"result"`
 }
 
-// PlayHandler menangani command play
+
 func PlayHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument
+
 	if len(ctx.Args) == 0 {
 		message := "❌ *Masukkan judul atau link YouTube!*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -61,10 +61,10 @@ func PlayHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Join semua args menjadi query
+
 	query := joinStrings(ctx.Args, " ")
 
-	// Fetch dari API
+
 	apiURL := "https://api.azbry.com/api/download/ytplay2?q=" + url.QueryEscape(query)
 
 	playResp, err := fetchPlayAPI(apiURL)
@@ -77,7 +77,7 @@ func PlayHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Validasi response
+
 	if !playResp.Status {
 		errorMsg := "❌ *Audio tidak ditemukan!*\n\n" +
 			"┌─⦿ *Info*\n" +
@@ -88,15 +88,15 @@ func PlayHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Langsung download dan kirim audio
+
 	return sendPlayAudio(ctx, playResp)
 }
 
-// sendPlayAudio mengirim audio dengan format ExternalAdReply
+
 func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 	result := data.Result
 
-	// Download audio dari API
+
 	audioData, err := downloadFileFast(result.Download)
 	if err != nil {
 		errorMsg := "❌ *Gagal download audio!*\n\n" +
@@ -107,16 +107,16 @@ func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 		return nil
 	}
 
-	// Upload ke WhatsApp
+
 	uploadResp, err := ctx.Client.Upload(context.Background(), audioData, gowa.MediaAudio)
 	if err != nil {
 		return fmt.Errorf("failed to upload audio: %w", err)
 	}
 
-	// Parse duration
+
 	durationSeconds := parseDuration(result.Duration)
 
-	// Buat pesan audio
+
 	senderStr := ctx.Sender.String()
 	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
 	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
@@ -161,7 +161,7 @@ func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 	return nil
 }
 
-// fetchPlayAPI mengambil data dari API
+
 func fetchPlayAPI(apiURL string) (*PlayResponse, error) {
 	client := &http.Client{
 		Timeout: 60 * time.Second,
@@ -172,7 +172,7 @@ func fetchPlayAPI(apiURL string) (*PlayResponse, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set headers yang lebih lengkap
+
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
@@ -185,7 +185,7 @@ func fetchPlayAPI(apiURL string) (*PlayResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	// Read body untuk error message juga
+
 	body, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
@@ -200,7 +200,7 @@ func fetchPlayAPI(apiURL string) (*PlayResponse, error) {
 	return &playResp, nil
 }
 
-// min returns the smaller of two integers
+
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -208,20 +208,20 @@ func min(a, b int) int {
 	return b
 }
 
-// parseDuration memparse durasi dari format "4:01" ke seconds
+
 func parseDuration(duration string) uint32 {
-	// Split by ":"
+
 	parts := splitString(duration, ":")
 	if len(parts) == 2 {
 		minutes := parseUint(parts[0])
 		seconds := parseUint(parts[1])
 		return uint32(minutes*60 + seconds)
 	}
-	// Kalau hanya 1 angka (detik)
+
 	return uint32(parseUint(duration))
 }
 
-// splitString sederhana split string
+
 func splitString(s, sep string) []string {
 	var result []string
 	start := 0
@@ -236,7 +236,7 @@ func splitString(s, sep string) []string {
 	return result
 }
 
-// parseUint parse string ke uint
+
 func parseUint(s string) uint32 {
 	var result uint32
 	for _, c := range s {
@@ -247,12 +247,12 @@ func parseUint(s string) uint32 {
 	return result
 }
 
-// downloadFileFast download file dengan timeout cepat
+
 func downloadFileFast(url string) ([]byte, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return nil // Allow all redirects
+			return nil
 		},
 	}
 
@@ -282,7 +282,7 @@ func downloadFileFast(url string) ([]byte, error) {
 	return data, nil
 }
 
-// joinStrings menggabungkan slice string dengan separator
+
 func joinStrings(elems []string, sep string) string {
 	if len(elems) == 0 {
 		return ""
@@ -294,7 +294,7 @@ func joinStrings(elems []string, sep string) string {
 	return result
 }
 
-// truncateString memotong string jika terlalu panjang
+
 func truncateString(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s

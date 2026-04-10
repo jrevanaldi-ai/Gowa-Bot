@@ -7,7 +7,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// StopJadibotMetadata adalah metadata untuk command stopjadibot
+
 var StopJadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "stopjadibot",
 	Tag:       "jadibot",
@@ -18,9 +18,9 @@ var StopJadibotMetadata = &lib.CommandMetadata{
 	Alias:     []string{"stopjb", "matibot"},
 }
 
-// StopJadibotHandler menangani command stopjadibot
+
 func StopJadibotHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument (ID jadibot)
+
 	if len(ctx.Args) == 0 {
 		message := "*⏹️ Stop Jadibot*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -40,7 +40,7 @@ func StopJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah SessionManager tersedia
+
 	if ctx.JadibotSessionManager == nil {
 		message := "❌ *Fitur Jadibot belum diaktifkan!*\n\n" +
 			"_SessionManager belum diinisialisasi. Hubungi admin bot._"
@@ -48,10 +48,10 @@ func StopJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Ambil ID jadibot
+
 	jadibotID := ctx.Args[0]
 
-	// Cek apakah jadibot milik user
+
 	botInfo, err := ctx.JadibotSessionManager.GetJadibotInfo(jadibotID)
 	if err != nil {
 		message := "❌ *Jadibot tidak ditemukan!*\n\n" +
@@ -66,7 +66,7 @@ func StopJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Verifikasi ownership
+
 	if botInfo.OwnerJID != ctx.Sender.String() {
 		message := "❌ *Akses Ditolak!*\n\n" +
 			"┌─⦿ *Error*\n" +
@@ -79,7 +79,7 @@ func StopJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah jadibot sedang running
+
 	isRunning := ctx.JadibotSessionManager.IsRunning(jadibotID)
 	if !isRunning {
 		message := "ℹ️ *Jadibot Tidak Sedang Berjalan*\n\n" +
@@ -94,7 +94,7 @@ func StopJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Stop jadibot
+
 	if err := ctx.JadibotSessionManager.StopJadibot(jadibotID); err != nil {
 		message := "❌ *Gagal menghentikan jadibot!*\n\n" +
 			"┌─⦿ *Error*\n" +
@@ -104,7 +104,7 @@ func StopJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Sukses
+
 	message := "✅ *Jadibot Berhasil Dihentikan!*\n\n" +
 		"┌─⦿ *Info*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +

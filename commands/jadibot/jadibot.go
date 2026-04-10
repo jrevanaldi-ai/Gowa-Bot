@@ -9,7 +9,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// JadibotMetadata adalah metadata untuk command jadibot
+
 var JadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "jadibot",
 	Tag:       "jadibot",
@@ -20,9 +20,9 @@ var JadibotMetadata = &lib.CommandMetadata{
 	Alias:     []string{"jb", "botbaru"},
 }
 
-// JadibotHandler menangani command jadibot
+
 func JadibotHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument (nomor telepon)
+
 	if len(ctx.Args) == 0 {
 		message := "*🤖 Jadibot - Buat Bot Baru*\n\n" +
 			"Buat bot WhatsApp pribadi Anda melalui bot induk!\n\n" +
@@ -46,7 +46,7 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah SessionManager tersedia
+
 	if ctx.JadibotSessionManager == nil {
 		message := "❌ *Fitur Jadibot belum diaktifkan!*\n\n" +
 			"_SessionManager belum diinisialisasi. Hubungi admin bot._"
@@ -54,14 +54,14 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Ambil nomor telepon dari args
+
 	phoneNumber := strings.Join(ctx.Args, " ")
-	
-	// Validasi format nomor telepon
+
+
 	phoneNumber = strings.TrimSpace(phoneNumber)
 	phoneNumber = strings.TrimPrefix(phoneNumber, "+")
-	
-	// Cek apakah nomor valid
+
+
 	if !isValidPhoneNumber(phoneNumber) {
 		message := "❌ *Nomor telepon tidak valid!*\n\n" +
 			"┌─⦿ *Format yang benar*\n" +
@@ -76,10 +76,10 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah owner (owner bisa unlimited jadibot)
+
 	isOwner := ctx.IsOwner
 
-	// Jika bukan owner, cek apakah user sudah punya jadibot (limit 1 untuk non-owner)
+
 	if !isOwner {
 		existingBots, err := ctx.JadibotSessionManager.GetJadibotByOwner(ctx.Sender.String())
 		if err == nil && len(existingBots) > 0 {
@@ -97,7 +97,7 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		}
 	}
 
-	// Kirim pesan loading
+
 	loadingMsg := "🔄 *Memproses pembuatan jadibot...*\n\n" +
 		"┌─⦿ *Info*\n" +
 		fmt.Sprintf("│ • Nomor: %s\n", phoneNumber) +
@@ -109,7 +109,7 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return fmt.Errorf("failed to send loading message: %w", sendErr)
 	}
 
-	// Create jadibot
+
 	jadibotID, createErr := ctx.JadibotSessionManager.CreateJadibot(ctx.Ctx, ctx.Sender.String(), phoneNumber)
 	if createErr != nil {
 		errorMsg := fmt.Sprintf("❌ *Gagal membuat jadibot!*\n\n┌─⦿ *Error*\n│ • %v\n└──────────────", createErr)
@@ -117,7 +117,7 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return createErr
 	}
 
-	// Start jadibot (akan generate pairing code)
+
 	pairingCode, startErr := ctx.JadibotSessionManager.StartJadibot(ctx.Ctx, jadibotID, phoneNumber)
 	if startErr != nil {
 		errorMsg := fmt.Sprintf("❌ *Gagal memulai jadibot!*\n\n┌─⦿ *Error*\n│ • %v\n└──────────────", startErr)
@@ -125,7 +125,7 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return startErr
 	}
 
-	// Jika pairing code tidak kosong (belum paired), kirim ke user
+
 	if pairingCode != "" {
 		message := "✅ *Jadibot Berhasil Dibuat!*\n\n" +
 			"┌─⦿ *Info Jadibot*\n" +
@@ -150,7 +150,7 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return sendErr
 	}
 
-	// Jika pairing code kosong, berarti sudah paired
+
 	message := "✅ *Jadibot Sudah Aktif!*\n\n" +
 		"┌─⦿ *Info Jadibot*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -166,9 +166,9 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 	return sendErr2
 }
 
-// isValidPhoneNumber validasi format nomor telepon
+
 func isValidPhoneNumber(phone string) bool {
-	// Harus diawali dengan angka dan panjang 10-15 digit
+
 	re := regexp.MustCompile(`^[0-9]{10,15}$`)
 	return re.MatchString(phone)
 }

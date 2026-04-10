@@ -8,7 +8,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// ExecMetadata adalah metadata untuk command exec
+
 var ExecMetadata = &lib.CommandMetadata{
 	Cmd:       "exec",
 	Tag:       "owner",
@@ -19,24 +19,24 @@ var ExecMetadata = &lib.CommandMetadata{
 	Alias:     []string{"$"},
 }
 
-// ExecHandler menangani command exec
+
 func ExecHandler(ctx *lib.CommandContext) error {
-	// Hanya owner yang bisa menggunakan
+
 	if !ctx.IsOwner {
 		return nil
 	}
 
-	// Get command dari args
+
 	if len(ctx.Args) == 0 {
 		message := "Usage: $<command>\nExample: $ls -la"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-	// Join semua args menjadi command
+
 	cmdStr := strings.Join(ctx.Args, " ")
 
-	// Exec command
+
 	cmd := exec.Command("sh", "-c", cmdStr)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -48,7 +48,7 @@ func ExecHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Kirim output
+
 	message := string(output)
 	if message == "" {
 		message = "✓ Command executed successfully (no output)"
@@ -57,17 +57,17 @@ func ExecHandler(ctx *lib.CommandContext) error {
 	return err
 }
 
-// IsExecCommand cek apakah pesan adalah exec command dengan prefix $
+
 func IsExecCommand(msg string) bool {
 	return strings.HasPrefix(msg, "$") && len(msg) > 1
 }
 
-// ParseExecCommand memparse exec command dari pesan
+
 func ParseExecCommand(msg string) []string {
 	if !IsExecCommand(msg) {
 		return nil
 	}
-	// Hapus prefix $
+
 	msg = strings.TrimPrefix(msg, "$")
 	return strings.Fields(msg)
 }

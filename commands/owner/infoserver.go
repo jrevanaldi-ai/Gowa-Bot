@@ -17,7 +17,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// InfoserverMetadata adalah metadata untuk command infoserver
+
 var InfoserverMetadata = &lib.CommandMetadata{
 	Cmd:       "infoserver",
 	Tag:       "owner",
@@ -28,18 +28,18 @@ var InfoserverMetadata = &lib.CommandMetadata{
 	Alias:     []string{"sysinfo", "serverinfo", "info"},
 }
 
-// InfoserverHandler menangani command infoserver
+
 func InfoserverHandler(ctx *lib.CommandContext) error {
-	// Loading message - akan diedit nanti
+
 	loadingMsg := "🔄 *Fetching server information...*\n\n_Mohon tunggu sebentar..._"
-	
-	// Kirim loading message dan simpan response
+
+
 	sentResp, err := ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	if err != nil {
 		return fmt.Errorf("failed to send loading message: %w", err)
 	}
 
-	// Extract message ID dari response menggunakan reflection
+
 	var sentMsgID string
 	respValue := reflect.ValueOf(sentResp)
 	if respValue.Kind() == reflect.Struct {
@@ -49,17 +49,17 @@ func InfoserverHandler(ctx *lib.CommandContext) error {
 		}
 	}
 
-	// Jika tidak bisa extract ID, kirim pesan baru saja
+
 	if sentMsgID == "" {
 		info := collectServerInfo()
 		_, err = ctx.SendMessage(helper.CreateSimpleReply(info, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-	// Kumpulkan semua informasi
+
 	info := collectServerInfo()
 
-	// Edit pesan loading menjadi info server lengkap
+
 	editMsg := ctx.Client.BuildEdit(ctx.Chat, sentMsgID, &waE2E.Message{
 		ExtendedTextMessage: &waE2E.ExtendedTextMessage{
 			Text: proto.String(info),
@@ -77,14 +77,14 @@ func InfoserverHandler(ctx *lib.CommandContext) error {
 	return nil
 }
 
-// collectServerInfo mengumpulkan semua informasi server
+
 func collectServerInfo() string {
 	var info strings.Builder
 
 	info.WriteString("*╭───⦿ SERVER INFO ⦿───*\n")
 	info.WriteString("│\n")
 
-	// 1. System Information
+
 	info.WriteString("┌─⦿ *System Information*\n")
 	info.WriteString(fmt.Sprintf("│ • *OS:* %s\n", getOSInfo()))
 	info.WriteString(fmt.Sprintf("│ • *Architecture:* %s\n", runtime.GOARCH))
@@ -92,14 +92,14 @@ func collectServerInfo() string {
 	info.WriteString(fmt.Sprintf("│ • *Uptime:* %s\n", getSystemUptime()))
 	info.WriteString("└──────────────\n\n")
 
-	// 2. CPU Information
+
 	info.WriteString("┌─⦿ *CPU Information*\n")
 	info.WriteString(fmt.Sprintf("│ • *Model:* %s\n", getCPUModel()))
 	info.WriteString(fmt.Sprintf("│ • *Cores:* %d\n", runtime.NumCPU()))
 	info.WriteString(fmt.Sprintf("│ • *Usage:* %s\n", getCPUUsage()))
 	info.WriteString("└──────────────\n\n")
 
-	// 3. Memory/RAM Information
+
 	info.WriteString("┌─⦿ *Memory (RAM)*\n")
 	info.WriteString(fmt.Sprintf("│ • *Total:* %s\n", getTotalMemory()))
 	info.WriteString(fmt.Sprintf("│ • *Used:* %s\n", getUsedMemory()))
@@ -107,7 +107,7 @@ func collectServerInfo() string {
 	info.WriteString(fmt.Sprintf("│ • *Usage:* %s\n", getMemoryUsagePercent()))
 	info.WriteString("└──────────────\n\n")
 
-	// 4. Go Runtime Information
+
 	info.WriteString("┌─⦿ *Go Runtime*\n")
 	info.WriteString(fmt.Sprintf("│ • *Version:* %s\n", runtime.Version()))
 	info.WriteString(fmt.Sprintf("│ • *Goroutines:* %d\n", runtime.NumGoroutine()))
@@ -116,7 +116,7 @@ func collectServerInfo() string {
 	info.WriteString(fmt.Sprintf("│ • *Memory Total:* %s\n", getGoTotalMemory()))
 	info.WriteString("└──────────────\n\n")
 
-	// 5. Disk Information
+
 	info.WriteString("┌─⦿ *Disk Usage*\n")
 	info.WriteString(fmt.Sprintf("│ • *Total:* %s\n", getDiskTotal()))
 	info.WriteString(fmt.Sprintf("│ • *Used:* %s\n", getDiskUsed()))
@@ -124,13 +124,13 @@ func collectServerInfo() string {
 	info.WriteString(fmt.Sprintf("│ • *Usage:* %s\n", getDiskUsagePercent()))
 	info.WriteString("└──────────────\n\n")
 
-	// 6. Network Information
+
 	info.WriteString("┌─⦿ *Network*\n")
 	info.WriteString(fmt.Sprintf("│ • *IP Public:* %s\n", getPublicIP()))
 	info.WriteString(fmt.Sprintf("│ • *IP Local:* %s\n", getLocalIP()))
 	info.WriteString("└──────────────\n\n")
 
-	// 7. Bot Information
+
 	info.WriteString("┌─⦿ *Bot Information*\n")
 	info.WriteString(fmt.Sprintf("│ • *Uptime:* %s\n", getBotUptime()))
 	info.WriteString(fmt.Sprintf("│ • *Start Time:* %s\n", getBotStartTime()))
@@ -138,7 +138,7 @@ func collectServerInfo() string {
 	info.WriteString(fmt.Sprintf("│ • *Go Version:* %s\n", runtime.Version()))
 	info.WriteString("└──────────────\n\n")
 
-	// 8. Process Information
+
 	info.WriteString("┌─⦿ *Process*\n")
 	info.WriteString(fmt.Sprintf("│ • *PID:* %d\n", os.Getpid()))
 	info.WriteString(fmt.Sprintf("│ • *Path:* %s\n", getExecutablePath()))
@@ -150,7 +150,7 @@ func collectServerInfo() string {
 	return info.String()
 }
 
-// Helper functions untuk mendapatkan informasi server
+
 
 func getOSInfo() string {
 	switch runtime.GOOS {
@@ -177,21 +177,21 @@ func getSystemUptime() string {
 	cmd := exec.Command("uptime", "-s")
 	output, err := cmd.Output()
 	if err != nil {
-		// Fallback untuk system yang tidak support uptime -s
+
 		return "N/A"
 	}
-	
+
 	startTime, err := time.Parse("2006-01-02 15:04:05", strings.TrimSpace(string(output)))
 	if err != nil {
 		return "N/A"
 	}
-	
+
 	uptime := time.Since(startTime)
 	return formatDuration(uptime)
 }
 
 func getCPUModel() string {
-	// Baca dari /proc/cpuinfo untuk Linux
+
 	if runtime.GOOS == "linux" {
 		cmd := exec.Command("grep", "-m", "1", "model name", "/proc/cpuinfo")
 		output, err := cmd.Output()
@@ -199,7 +199,7 @@ func getCPUModel() string {
 			parts := strings.SplitN(string(output), ":", 2)
 			if len(parts) == 2 {
 				model := strings.TrimSpace(parts[1])
-				// Truncate jika terlalu panjang
+
 				if len(model) > 40 {
 					model = model[:37] + "..."
 				}
@@ -207,8 +207,8 @@ func getCPUModel() string {
 			}
 		}
 	}
-	
-	// Untuk macOS
+
+
 	if runtime.GOOS == "darwin" {
 		cmd := exec.Command("sysctl", "-n", "machdep.cpu.brand_string")
 		output, err := cmd.Output()
@@ -220,20 +220,20 @@ func getCPUModel() string {
 			return model
 		}
 	}
-	
+
 	return fmt.Sprintf("%s (%s)", runtime.GOOS, runtime.GOARCH)
 }
 
 func getCPUUsage() string {
 	if runtime.GOOS == "linux" {
-		// Baca dari /proc/stat
+
 		cmd := exec.Command("top", "-bn1")
 		output, err := cmd.Output()
 		if err == nil {
 			lines := strings.Split(string(output), "\n")
 			for _, line := range lines {
 				if strings.Contains(line, "%Cpu") || strings.Contains(line, "%cpu") {
-					// Extract CPU usage
+
 					parts := strings.Fields(line)
 					for i, part := range parts {
 						if part == "id," || part == "id" {
@@ -248,7 +248,7 @@ func getCPUUsage() string {
 			}
 		}
 	}
-	
+
 	return "N/A"
 }
 
@@ -264,8 +264,8 @@ func getTotalMemory() string {
 			}
 		}
 	}
-	
-	// Fallback: gunakan memory info dari runtime
+
+
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 	return formatBytes(int64(mem.TotalAlloc))
@@ -279,8 +279,8 @@ func getUsedMemory() string {
 			parts := strings.Fields(string(output))
 			if len(parts) >= 2 {
 				availableKb, _ := strconv.ParseInt(parts[1], 10, 64)
-				
-				// Get total
+
+
 				cmd2 := exec.Command("grep", "MemTotal", "/proc/meminfo")
 				output2, err2 := cmd2.Output()
 				if err2 == nil {
@@ -294,7 +294,7 @@ func getUsedMemory() string {
 			}
 		}
 	}
-	
+
 	return "N/A"
 }
 
@@ -310,7 +310,7 @@ func getFreeMemory() string {
 			}
 		}
 	}
-	
+
 	return "N/A"
 }
 
@@ -335,7 +335,7 @@ func getMemoryUsagePercent() string {
 			}
 		}
 	}
-	
+
 	return "N/A"
 }
 
@@ -379,10 +379,10 @@ func getDiskInfo(field string) string {
 	if err != nil {
 		return "N/A"
 	}
-	
+
 	lines := strings.Split(string(output), "\n")
 	if len(lines) >= 2 {
-		// Line 1 adalah header, line 2 adalah data
+
 		fields := strings.Fields(lines[1])
 		if len(fields) >= 5 {
 			switch field {
@@ -397,18 +397,18 @@ func getDiskInfo(field string) string {
 			}
 		}
 	}
-	
+
 	return "N/A"
 }
 
 func getPublicIP() string {
-	// Coba beberapa service
+
 	services := []string{
 		"curl -s ifconfig.me",
 		"curl -s api.ipify.org",
 		"curl -s icanhazip.com",
 	}
-	
+
 	for _, service := range services {
 		cmd := exec.Command("sh", "-c", service)
 		output, err := cmd.Output()
@@ -416,12 +416,12 @@ func getPublicIP() string {
 			return strings.TrimSpace(string(output))
 		}
 	}
-	
+
 	return "N/A"
 }
 
 func getLocalIP() string {
-	// Coba dapatkan IP dari hostname
+
 	cmd := exec.Command("hostname", "-I")
 	output, err := cmd.Output()
 	if err == nil && len(output) > 0 {
@@ -430,7 +430,7 @@ func getLocalIP() string {
 			return ips[0]
 		}
 	}
-	
+
 	return "127.0.0.1"
 }
 
@@ -448,8 +448,8 @@ func getExecutablePath() string {
 	if err != nil {
 		return "Unknown"
 	}
-	
-	// Truncate jika terlalu panjang
+
+
 	if len(path) > 50 {
 		path = "..." + path[len(path)-47:]
 	}
@@ -460,7 +460,7 @@ func getThreadCount() int {
 	return runtime.NumGoroutine()
 }
 
-// Utility functions
+
 func formatBytes(bytes int64) string {
 	const (
 		KB = 1024
@@ -468,7 +468,7 @@ func formatBytes(bytes int64) string {
 		GB = 1024 * MB
 		TB = 1024 * GB
 	)
-	
+
 	switch {
 	case bytes >= TB:
 		return fmt.Sprintf("%.2f TB", float64(bytes)/TB)
@@ -487,15 +487,15 @@ func formatDuration(d time.Duration) string {
 	hours := int(d.Hours())
 	minutes := int(d.Minutes()) % 60
 	seconds := int(d.Seconds()) % 60
-	
+
 	if hours > 24 {
 		days := hours / 24
 		hours = hours % 24
 		return fmt.Sprintf("%d hari %02d:%02d:%02d", days, hours, minutes, seconds)
 	}
-	
+
 	return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)
 }
 
-// startTime adalah waktu bot mulai berjalan
+
 var startTime = time.Now()

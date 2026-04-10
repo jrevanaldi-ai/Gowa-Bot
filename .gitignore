@@ -1,0 +1,53 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+gowa-bot
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+
+# Database files
+*.db
+*.db-journal
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Session directories (jadibot sessions)
+sessions/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# Node modules (for JS scripts)
+node_modules/
+
+# Remove comments script (local utility, not needed in repo)
+remove-go-comments.js
+REMOVE-GO-COMMENTS.md

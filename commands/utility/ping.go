@@ -12,7 +12,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// PingMetadata adalah metadata untuk command ping
+
 var PingMetadata = &lib.CommandMetadata{
 	Cmd:       "ping",
 	Tag:       "utility",
@@ -23,9 +23,9 @@ var PingMetadata = &lib.CommandMetadata{
 	Alias:     []string{"p"},
 }
 
-// PingHandler menangani command ping
+
 func PingHandler(ctx *lib.CommandContext) error {
-	// Format pesan response awal
+
 	message := fmt.Sprintf("*🏓 Pong!*\n\n"+
 		"┌─⦿ *Info Bot*\n"+
 		"│ • *Latency:* calculating...\n"+
@@ -34,10 +34,10 @@ func PingHandler(ctx *lib.CommandContext) error {
 		"└──────────────",
 		getUptime())
 
-	// Buat pesan dengan reply
+
 	replyMsg := helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
-	
-	// Ukur latency real-time
+
+
 	start := time.Now()
 	sentResp, err := ctx.SendMessage(replyMsg)
 	latency := time.Since(start).Milliseconds()
@@ -46,7 +46,7 @@ func PingHandler(ctx *lib.CommandContext) error {
 		return fmt.Errorf("failed to send ping response: %w", err)
 	}
 
-	// Extract message ID dari response menggunakan reflection
+
 	var sentMsgID string
 	respValue := reflect.ValueOf(sentResp)
 	if respValue.Kind() == reflect.Struct {
@@ -56,12 +56,12 @@ func PingHandler(ctx *lib.CommandContext) error {
 		}
 	}
 
-	// Jika tidak bisa extract ID, skip edit
+
 	if sentMsgID == "" {
 		return nil
 	}
 
-	// Update pesan dengan latency real
+
 	updatedMessage := fmt.Sprintf("*🏓 Pong!*\n\n"+
 		"┌─⦿ *Info Bot*\n"+
 		"│ • *Latency:* %d ms\n"+
@@ -71,7 +71,7 @@ func PingHandler(ctx *lib.CommandContext) error {
 		latency,
 		getUptime())
 
-	// Edit pesan dengan latency real
+
 	editMsg := ctx.Client.BuildEdit(ctx.Chat, sentMsgID, &waE2E.Message{
 		ExtendedTextMessage: &waE2E.ExtendedTextMessage{
 			Text: proto.String(updatedMessage),
@@ -86,10 +86,10 @@ func PingHandler(ctx *lib.CommandContext) error {
 	return nil
 }
 
-// uptime adalah waktu bot mulai berjalan
+
 var startTime = time.Now()
 
-// getUptime mendapatkan uptime bot
+
 func getUptime() string {
 	uptime := time.Since(startTime)
 

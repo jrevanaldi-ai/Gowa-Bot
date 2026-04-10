@@ -18,7 +18,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// TikTokMetadata adalah metadata untuk command tiktok
+
 var TikTokMetadata = &lib.CommandMetadata{
 	Cmd:       "tiktok",
 	Tag:       "download",
@@ -29,7 +29,7 @@ var TikTokMetadata = &lib.CommandMetadata{
 	Alias:     []string{"tt", "tikdl", "tiktokdl"},
 }
 
-// TikTokResponse struktur response dari API TikTok
+
 type TikTokResponse struct {
 	Creator string       `json:"creator"`
 	Source  string       `json:"source"`
@@ -38,7 +38,7 @@ type TikTokResponse struct {
 	Data    TikTokData   `json:"data"`
 }
 
-// TikTokData data video TikTok
+
 type TikTokData struct {
 	Title     string   `json:"title"`
 	Author    string   `json:"author"`
@@ -46,9 +46,9 @@ type TikTokData struct {
 	Links     []string `json:"links"`
 }
 
-// TikTokHandler menangani command tiktok
+
 func TikTokHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument
+
 	if len(ctx.Args) == 0 {
 		message := "❌ *Masukkan link TikTok!*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -61,10 +61,10 @@ func TikTokHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Join semua args menjadi URL
+
 	ttURL := joinStrings(ctx.Args, " ")
 
-	// Fetch dari API
+
 	apiURL := "https://api.azbry.com/api/download/tiktok?url=" + url.QueryEscape(ttURL)
 
 	ttResp, err := fetchTikTokAPI(apiURL)
@@ -77,7 +77,7 @@ func TikTokHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Validasi response
+
 	if !ttResp.Status || len(ttResp.Data.Links) == 0 {
 		errorMsg := "❌ *Gagal download!*\n\n" +
 			"┌─⦿ *Info*\n" +
@@ -88,11 +88,11 @@ func TikTokHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Kirim video
+
 	return sendTikTokVideo(ctx, ttResp)
 }
 
-// fetchTikTokAPI mengambil data dari API TikTok
+
 func fetchTikTokAPI(apiURL string) (*TikTokResponse, error) {
 	client := &http.Client{
 		Timeout: 60 * time.Second,
@@ -129,21 +129,21 @@ func fetchTikTokAPI(apiURL string) (*TikTokResponse, error) {
 	return &ttResp, nil
 }
 
-// sendTikTokVideo mengirim video dari TikTok
+
 func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 	videoURL := data.Data.Links[0]
 
-	// Bersihkan link - kadang ada prefix "https://tikwm.com" atau "http://tikwm.com"
+
 	videoURL = strings.TrimPrefix(videoURL, "https://tikwm.com")
 	videoURL = strings.TrimPrefix(videoURL, "http://tikwm.com")
 	videoURL = strings.TrimSpace(videoURL)
 
-	// Pastikan URL valid
+
 	if !strings.HasPrefix(videoURL, "http://") && !strings.HasPrefix(videoURL, "https://") {
 		videoURL = "https://" + videoURL
 	}
 
-	// Download video
+
 	videoData, err := downloadFileFast(videoURL)
 	if err != nil {
 		errorMsg := "❌ *Gagal download video!*\n\n" +
@@ -154,13 +154,13 @@ func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 		return nil
 	}
 
-	// Upload ke WhatsApp
+
 	uploadResp, err := ctx.Client.Upload(context.Background(), videoData, gowa.MediaVideo)
 	if err != nil {
 		return fmt.Errorf("failed to upload video: %w", err)
 	}
 
-	// Buat pesan video
+
 	senderStr := ctx.Sender.String()
 	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
 	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA

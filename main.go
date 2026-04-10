@@ -36,20 +36,20 @@ var (
 func main() {
 	flag.Parse()
 
-	// Tampilkan banner
+
 	helper.Banner()
 
-	// Buat logger
+
 	logger := helper.NewLogger("Main")
 	logger.Info("Starting Gowa-Bot...")
 
-	// Buat command registry
+
 	registry := lib.NewCommandRegistry()
 
-	// Register commands
+
 	registerCommands(registry)
 
-	// Buat database manager untuk jadibot
+
 	dbManager, err := helper.NewDatabaseManager(*dbPath)
 	if err != nil {
 		logger.Error("Failed to create database manager: %v", err)
@@ -57,10 +57,10 @@ func main() {
 	}
 	defer dbManager.Close()
 
-	// Buat jadibot session manager
+
 	gowaLog := &formatLogger{logger: logger}
-	
-	// Client factory untuk buat BotClient jadibot
+
+
 	clientFactory := func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface {
 		botClient := client.NewBotClient(registry, &client.BotConfig{
 			Owners:      owners,
@@ -72,11 +72,11 @@ func main() {
 		botClient.SetClient(gowaClient)
 		return botClient
 	}
-	
+
 	jadibotSessionManager := helper.NewJadibotSessionManager(dbManager, registry, gowaLog, logger, clientFactory)
 	jadibotSessionManager.SetOwnerNumbers(getOwnerNumbers())
 
-	// Resume semua jadibot yang aktif saat startup
+
 	logger.Info("Resuming active jadibots...")
 	activeJadibots, err := dbManager.GetActiveJadibot()
 	if err != nil {
@@ -91,7 +91,7 @@ func main() {
 		}
 	}
 
-	// Buat bot client
+
 	botClient := client.NewBotClient(registry, &client.BotConfig{
 		Owners:                getOwnerNumbers(),
 		Prefix:                ".",
@@ -101,7 +101,7 @@ func main() {
 		JadibotSessionManager: jadibotSessionManager,
 	})
 
-	// Connect to WhatsApp
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -111,20 +111,20 @@ func main() {
 		return
 	}
 
-	// Set client ke botClient
+
 	botClient.SetClient(cli)
 
 	logger.Success("Gowa-Bot is ready!")
 	logger.Info("Press Ctrl+C to stop")
 
-	// Wait for interrupt signal
+
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 
 	logger.Info("Shutting down...")
 
-	// Stop semua jadibot
+
 	logger.Info("Stopping all jadibots...")
 	jadibotSessionManager.StopAll()
 
@@ -135,33 +135,33 @@ func main() {
 	logger.Success("Gowa-Bot stopped")
 }
 
-// registerCommands mendaftarkan semua command ke registry
+
 func registerCommands(registry *lib.CommandRegistry) {
-	// Register ping command
+
 	registry.Register(utility.PingMetadata, utility.PingHandler)
 
-	// Register fetch command
+
 	registry.Register(utility.FetchMetadata, utility.FetchHandler)
 
-	// Register menu command
+
 	registry.Register(general.MenuMetadata, general.MenuHandler)
 
-	// Register help command
+
 	registry.Register(general.HelpMetadata, general.HelpHandler)
 
-	// Register checkephemeral command (debug)
+
 	registry.Register(debug.CheckEphemeralMetadata, debug.CheckEphemeralHandler)
 
-	// Register exec command (owner only)
+
 	registry.Register(owner.ExecMetadata, owner.ExecHandler)
 
-	// Register setmode command (owner only)
+
 	registry.Register(owner.SetmodeMetadata, owner.SetmodeHandler)
 
-	// Register infoserver command (owner only)
+
 	registry.Register(owner.InfoserverMetadata, owner.InfoserverHandler)
 
-	// Register jadibot commands
+
 	registry.Register(jadibot.JadibotMetadata, jadibot.JadibotHandler)
 	registry.Register(jadibot.ListJadibotMetadata, jadibot.ListJadibotHandler)
 	registry.Register(jadibot.StopJadibotMetadata, jadibot.StopJadibotHandler)
@@ -169,31 +169,31 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(jadibot.ResumeJadibotMetadata, jadibot.ResumeJadibotHandler)
 	registry.Register(jadibot.RemoveJadibotMetadata, jadibot.RemoveJadibotHandler)
 
-	// Register play command (download)
+
 	registry.Register(download.PlayMetadata, download.PlayHandler)
 
-	// Register spotify command (download)
+
 	registry.Register(download.SpotifyMetadata, download.SpotifyHandler)
 
-	// Register instagram command (download)
+
 	registry.Register(download.InstagramMetadata, download.InstagramHandler)
 
-	// Register tiktok command (download)
+
 	registry.Register(download.TikTokMetadata, download.TikTokHandler)
 
-	// Register ttsearch command (search & download)
+
 	registry.Register(download.TTSearchMetadata, download.TTSearchHandler)
 }
 
-// getOwnerNumbers mendapatkan daftar nomor owner dari environment variable
+
 func getOwnerNumbers() []string {
 	owners := os.Getenv("GOWA_BOT_OWNERS")
 	if owners == "" {
-		// Default owner numbers
+
 		return []string{"224983875903488"}
 	}
 
-	// Split by comma
+
 	result := make([]string, 0)
 	for _, owner := range splitString(owners, ",") {
 		owner = trimSpace(owner)
@@ -204,64 +204,64 @@ func getOwnerNumbers() []string {
 	return result
 }
 
-// connectWhatsApp menghubungkan client ke WhatsApp dengan pairing code
+
 func connectWhatsApp(ctx context.Context, logger *helper.Logger, botClient *client.BotClient) *gowa.Client {
-	// Buat logger untuk gowa
+
 	gowaLog := &formatLogger{logger: logger}
 
-	// Buat store container
+
 	container, err := sqlstore.New(ctx, "sqlite3", *dbPath+"?_foreign_keys=on", gowaLog)
 	if err != nil {
 		logger.Error("Failed to create store: %v", err)
 		return nil
 	}
 
-	// Get or create device
+
 	device, err := container.GetFirstDevice(ctx)
 	if err != nil {
 		logger.Error("Failed to get device: %v", err)
 		return nil
 	}
 
-	// Create client if no device found (will pair)
+
 	if device == nil {
 		device = container.NewDevice()
 	}
 
-	// Create client with device
+
 	cli := gowa.NewClient(device, gowaLog)
 
-	// Set event handler
+
 	cli.AddEventHandler(botClient.EventHandler)
 
-	// Connect
+
 	if err := cli.Connect(); err != nil {
 		logger.Error("Failed to connect: %v", err)
 		return nil
 	}
 
-	// Check if already paired
+
 	if cli.Store.ID != nil {
 		logger.Success("Already paired as %s", cli.Store.ID.String())
 		return cli
 	}
 
-	// Pairing
+
 	if *phone == "" {
 		logger.Error("Phone number is required for pairing. Use -phone flag")
 		return nil
 	}
 
-	// Wait for connection to be ready
+
 	time.Sleep(1 * time.Second)
 
-	// Generate pairing code
+
 	var code string
 	if *pairCode != "" {
-		// Use custom pairing code
+
 		code, err = cli.PairPhone(ctx, *phone, true, gowa.PairClientChrome, "Chrome (Linux)", *pairCode)
 	} else {
-		// Generate random pairing code
+
 		code, err = cli.PairPhone(ctx, *phone, true, gowa.PairClientChrome, "Chrome (Linux)")
 	}
 
@@ -273,8 +273,8 @@ func connectWhatsApp(ctx context.Context, logger *helper.Logger, botClient *clie
 	logger.Info("Pairing code: %s", code)
 	logger.Info("Enter this code in your WhatsApp app (Linked Devices)")
 
-	// Wait for pairing to complete
-	maxWait := 160 * time.Second // QR code expiry time
+
+	maxWait := 160 * time.Second
 	startTime := time.Now()
 
 	for time.Since(startTime) < maxWait {
@@ -289,7 +289,7 @@ func connectWhatsApp(ctx context.Context, logger *helper.Logger, botClient *clie
 	return nil
 }
 
-// Helper functions
+
 func splitString(s, sep string) []string {
 	result := make([]string, 0)
 	start := 0
@@ -304,7 +304,7 @@ func splitString(s, sep string) []string {
 }
 
 func trimSpace(s string) string {
-	// Simple trim space implementation
+
 	start := 0
 	end := len(s)
 	for start < end && (s[start] == ' ' || s[start] == '\t') {
@@ -316,7 +316,7 @@ func trimSpace(s string) string {
 	return s[start:end]
 }
 
-// Format logger untuk gowa
+
 type formatLogger struct {
 	logger *helper.Logger
 }

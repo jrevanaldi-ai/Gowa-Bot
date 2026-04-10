@@ -5,31 +5,31 @@ import (
 	"time"
 )
 
-// CacheItem adalah item dalam cache dengan expiry time
+
 type CacheItem struct {
 	Value      interface{}
 	Expiration time.Time
 }
 
-// Cache adalah sistem cache full dengan TTL support
+
 type Cache struct {
 	items map[string]CacheItem
 	mu    sync.RWMutex
 }
 
-// NewCache membuat cache baru
+
 func NewCache() *Cache {
 	cache := &Cache{
 		items: make(map[string]CacheItem),
 	}
 
-	// Start cleanup goroutine
+
 	go cache.cleanupLoop()
 
 	return cache
 }
 
-// Set menambahkan item ke cache dengan TTL
+
 func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -40,7 +40,7 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	}
 }
 
-// Get mengambil item dari cache
+
 func (c *Cache) Get(key string) (interface{}, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -57,7 +57,7 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	return item.Value, true
 }
 
-// GetWithDefault mengambil item dari cache dengan default value
+
 func (c *Cache) GetWithDefault(key string, defaultValue interface{}) interface{} {
 	value, found := c.Get(key)
 	if !found {
@@ -66,7 +66,7 @@ func (c *Cache) GetWithDefault(key string, defaultValue interface{}) interface{}
 	return value
 }
 
-// Delete menghapus item dari cache
+
 func (c *Cache) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -74,7 +74,7 @@ func (c *Cache) Delete(key string) {
 	delete(c.items, key)
 }
 
-// Clear membersihkan semua item dari cache
+
 func (c *Cache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -82,7 +82,7 @@ func (c *Cache) Clear() {
 	c.items = make(map[string]CacheItem)
 }
 
-// Count mendapatkan jumlah item dalam cache
+
 func (c *Cache) Count() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -96,7 +96,7 @@ func (c *Cache) Count() int {
 	return count
 }
 
-// cleanupLoop membersihkan expired items secara berkala
+
 func (c *Cache) cleanupLoop() {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
@@ -106,7 +106,7 @@ func (c *Cache) cleanupLoop() {
 	}
 }
 
-// cleanup membersihkan expired items
+
 func (c *Cache) cleanup() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -119,14 +119,14 @@ func (c *Cache) cleanup() {
 	}
 }
 
-// RateLimiter adalah rate limiter berbasis cache
+
 type RateLimiter struct {
 	cache     *Cache
 	limit     int
 	windowSec time.Duration
 }
 
-// NewRateLimiter membuat rate limiter baru
+
 func NewRateLimiter(limit int, windowSec time.Duration) *RateLimiter {
 	return &RateLimiter{
 		cache:     NewCache(),
@@ -135,7 +135,7 @@ func NewRateLimiter(limit int, windowSec time.Duration) *RateLimiter {
 	}
 }
 
-// Allow memeriksa apakah request diizinkan
+
 func (rl *RateLimiter) Allow(key string) bool {
 	rl.cache.mu.Lock()
 	defer rl.cache.mu.Unlock()

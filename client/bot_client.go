@@ -18,7 +18,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// BotClient adalah wrapper untuk gowa.Client dengan fitur bot
+
 type BotClient struct {
 	Client                *gowa.Client
 	Registry              *lib.CommandRegistry
@@ -27,26 +27,26 @@ type BotClient struct {
 	EphemeralHelper       *helper.EphemeralHelper
 	JadibotSessionManager *helper.JadibotSessionManager
 	Owners                map[string]bool
-	SelfMode              bool // Jika true, bot bisa merespon pesan dari diri sendiri
+	SelfMode              bool
 	mu                    sync.RWMutex
 }
 
-// BotConfig adalah konfigurasi untuk bot
+
 type BotConfig struct {
 	Owners                []string
 	Prefix                string
 	MaxWorkers            int
 	EnableCache           bool
-	SelfMode              bool // Jika true, bot bisa merespon pesan dari diri sendiri
+	SelfMode              bool
 	JadibotSessionManager *helper.JadibotSessionManager
 }
 
-// SetSelfMode mengatur self mode
+
 func (b *BotClient) SetSelfMode(mode bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.SelfMode = mode
-	
+
 	if mode {
 		b.Logger.Info("Self mode activated")
 	} else {
@@ -54,14 +54,14 @@ func (b *BotClient) SetSelfMode(mode bool) {
 	}
 }
 
-// GetSelfMode mendapatkan status self mode
+
 func (b *BotClient) GetSelfMode() bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.SelfMode
 }
 
-// NewBotClient membuat BotClient baru
+
 func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 	owners := make(map[string]bool)
 	for _, owner := range config.Owners {
@@ -77,72 +77,72 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		JadibotSessionManager: config.JadibotSessionManager,
 	}
 
-	// Init EphemeralHelper
+
 	botClient.EphemeralHelper = helper.NewEphemeralHelper(nil, 5*time.Minute)
 
 	return botClient
 }
 
-// SetClient mengatur gowa.Client
+
 func (b *BotClient) SetClient(client *gowa.Client) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.Client = client
 
-	// Set client ke EphemeralHelper
+
 	if b.EphemeralHelper != nil {
 		b.EphemeralHelper.SetClient(client)
 	}
 }
 
-// SendMessage mengirim pesan dengan dukungan ephemeral otomatis
+
 func (b *BotClient) SendMessage(ctx context.Context, chat types.JID, message *waE2E.Message) (interface{}, error) {
-	// Gunakan EphemeralHelper untuk wrap message jika perlu
+
 	if b.EphemeralHelper != nil {
 		wrappedMsg, err := b.EphemeralHelper.WrapMessageWithEphemeral(ctx, chat, message)
 		if err != nil {
 			b.Logger.Warning("Failed to wrap ephemeral message: %v", err)
-			// Fallback ke pesan asli
+
 			wrappedMsg = message
 		}
 		message = wrappedMsg
 	}
 
-	// Kirim pesan
+
 	return b.Client.SendMessage(ctx, chat, message)
 }
 
-// HandleMessage menangani pesan masuk dengan goroutine
+
 func (b *BotClient) HandleMessage(ctx context.Context, evt *events.Message) {
-	// Gunakan goroutine untuk handle setiap pesan
+
 	go b.processMessage(ctx, evt)
 }
 
-// processMessage memproses pesan masuk
+
 func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
-	// Get self mode status
+
 	b.mu.RLock()
 	selfMode := b.SelfMode
 	b.mu.RUnlock()
 
-	// Ignore pesan dari diri sendiri jika bukan self mode
+
 	if evt.Info.IsFromMe && !selfMode {
 		return
 	}
 
-	// Jika self mode aktif dan pesan dari diri sendiri, pastikan hanya owner yang bisa pakai
+
 	if evt.Info.IsFromMe && selfMode {
-		// Cek apakah nomor bot adalah owner
+
 		if !b.isOwner(evt.Info.Sender) {
 			b.Logger.Debug("Self mode: Ignoring message from non-owner self")
 			return
 		}
 	}
 
-	// Get text dari berbagai tipe pesan
+
 	var msg string
-	
-	// Cek semua tipe pesan yang mungkin mengandung text
+
+
 	switch {
 	case evt.Message.Conversation != nil:
 		msg = *evt.Message.Conversation
@@ -197,9 +197,9 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	case evt.Message.ListMessage != nil && evt.Message.ListMessage.Title != nil:
 		msg = *evt.Message.ListMessage.Title
 	case evt.Message.EditedMessage != nil:
-		// Handle edited message - recurse
+
 		if evt.Message.EditedMessage.Message != nil {
-			// Process edited message
+
 			b.processMessage(ctx, &events.Message{
 				Info: evt.Info,
 				Message: evt.Message.EditedMessage.Message,
@@ -207,9 +207,9 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 			return
 		}
 	case evt.Message.EphemeralMessage != nil:
-		// Handle ephemeral message - recurse
+
 		if evt.Message.EphemeralMessage.Message != nil {
-			// Process ephemeral message
+
 			b.processMessage(ctx, &events.Message{
 				Info: evt.Info,
 				Message: evt.Message.EphemeralMessage.Message,
@@ -217,7 +217,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 			return
 		}
 	case evt.Message.ViewOnceMessage != nil:
-		// Handle view once message - recurse
+
 		if evt.Message.ViewOnceMessage.Message != nil {
 			b.processMessage(ctx, &events.Message{
 				Info: evt.Info,
@@ -226,7 +226,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 			return
 		}
 	case evt.Message.ViewOnceMessageV2 != nil:
-		// Handle view once v2 - recurse
+
 		if evt.Message.ViewOnceMessageV2.Message != nil {
 			b.processMessage(ctx, &events.Message{
 				Info: evt.Info,
@@ -235,7 +235,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 			return
 		}
 	case evt.Message.DocumentWithCaptionMessage != nil:
-		// Handle document with caption - recurse
+
 		if evt.Message.DocumentWithCaptionMessage.Message != nil {
 			b.processMessage(ctx, &events.Message{
 				Info: evt.Info,
@@ -249,37 +249,37 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		return
 	}
 
-	// Cek apakah sender adalah owner
+
 	isOwner := b.isOwner(evt.Info.Sender)
 
-	// Handle exec command dengan prefix $ terlebih dahulu
+
 	if strings.HasPrefix(msg, "$") && isOwner {
 		args := owner.ParseExecCommand(msg)
 		if len(args) > 0 {
-			// Langsung handle exec command
+
 			b.handleExecCommand(ctx, evt, args)
 			return
 		}
 	}
 
-	// Parse command dengan atau tanpa prefix
+
 	cmd, args := b.parseCommandWithOwner(msg, isOwner)
 	if cmd == "" {
 		return
 	}
 
-	// Dapatkan metadata command
+
 	meta, found := b.Registry.GetCommand(cmd)
 	if !found {
 		return
 	}
 
-	// Cek owner only
+
 	if meta.OwnerOnly && !isOwner {
 		return
 	}
 
-	// Log pesan masuk
+
 	chatType := "Private"
 	if evt.Info.IsGroup {
 		chatType = "Group"
@@ -291,17 +291,17 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		chatType,
 	)
 
-	// Dapatkan handler
+
 	handler, ok := b.Registry.GetHandler(cmd)
 	if !ok {
 		return
 	}
 
-	// Buat command context
+
 	cmdCtx := &lib.CommandContext{
 		Ctx:                     context.WithValue(ctx, "registry", b.Registry),
 		Client:                  b.Client,
-		BotClient:               b, // Set BotClient reference
+		BotClient:               b,
 		JadibotSessionManager:   b.JadibotSessionManager,
 		Sender:                  evt.Info.Sender,
 		Chat:                    evt.Info.Chat,
@@ -319,7 +319,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		},
 	}
 
-	// Eksekusi handler dengan error handling
+
 	b.mu.RLock()
 	client := b.Client
 	b.mu.RUnlock()
@@ -329,10 +329,10 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		return
 	}
 
-	// Handle error dari handler
+
 	if err := handler(cmdCtx); err != nil {
 		b.Logger.Error("Command error: %v", err)
-		// Kirim error message ke user
+
 		errorMsg := fmt.Sprintf("❌ Terjadi kesalahan: %v", err)
 		_, _ = b.SendMessage(ctx, evt.Info.Chat, &waE2E.Message{
 			ExtendedTextMessage: &waE2E.ExtendedTextMessage{
@@ -346,9 +346,9 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	}
 }
 
-// handleExecCommand menangani exec command secara langsung
+
 func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, args []string) {
-	// Buat command context
+
 	cmdCtx := &lib.CommandContext{
 		Ctx:                     context.WithValue(ctx, "registry", b.Registry),
 		Client:                  b.Client,
@@ -370,33 +370,33 @@ func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, 
 		},
 	}
 
-	// Dapatkan handler exec
+
 	handler, ok := b.Registry.GetHandler("exec")
 	if !ok {
 		return
 	}
 
-	// Eksekusi handler
+
 	if err := handler(cmdCtx); err != nil {
 		b.Logger.Error("Exec command error: %v", err)
 	}
 }
 
-// parseCommandWithOwner memparse command dengan atau tanpa prefix untuk owner
+
 func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool) (string, []string) {
-	// Jika owner, bisa pakai tanpa prefix
+
 	if isOwner {
-		// Cek apakah pesan dimulai dengan prefix "." atau "$"
+
 		if strings.HasPrefix(msg, ".") {
-			// Hapus prefix
+
 			msg = strings.TrimPrefix(msg, ".")
-			
-			// Split command dan args
+
+
 			parts := strings.Fields(msg)
 			if len(parts) == 0 {
 				return "", nil
 			}
-			
+
 			cmd := strings.ToLower(parts[0])
 			var args []string
 			if len(parts) > 1 {
@@ -404,15 +404,15 @@ func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool) (string, []s
 			}
 			return cmd, args
 		} else if strings.HasPrefix(msg, "$") {
-			// Exec command - akan dihandle terpisah
+
 			return "", nil
 		} else {
-			// Tanpa prefix untuk owner
+
 			parts := strings.Fields(msg)
 			if len(parts) == 0 {
 				return "", nil
 			}
-			
+
 			cmd := strings.ToLower(parts[0])
 			var args []string
 			if len(parts) > 1 {
@@ -421,48 +421,48 @@ func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool) (string, []s
 			return cmd, args
 		}
 	}
-	
-	// Untuk non-owner, harus pakai prefix "."
+
+
 	prefix := "."
 	if !strings.HasPrefix(msg, prefix) {
 		return "", nil
 	}
-	
-	// Hapus prefix
+
+
 	msg = strings.TrimPrefix(msg, prefix)
-	
-	// Split command dan args
+
+
 	parts := strings.Fields(msg)
 	if len(parts) == 0 {
 		return "", nil
 	}
-	
+
 	cmd := strings.ToLower(parts[0])
 	var args []string
 	if len(parts) > 1 {
 		args = parts[1:]
 	}
-	
+
 	return cmd, args
 }
 
-// parseCommand memparse command dari pesan
+
 func (b *BotClient) parseCommand(msg string) (string, []string) {
-	// Cek prefix "." atau "$"
+
 	prefix := "."
 	if strings.HasPrefix(msg, "$") {
 		prefix = "$"
 	}
 
-	// Cek apakah pesan dimulai dengan prefix
+
 	if !strings.HasPrefix(msg, prefix) {
 		return "", nil
 	}
 
-	// Hapus prefix
+
 	msg = strings.TrimPrefix(msg, prefix)
 
-	// Split command dan args
+
 	parts := strings.Fields(msg)
 	if len(parts) == 0 {
 		return "", nil
@@ -477,17 +477,17 @@ func (b *BotClient) parseCommand(msg string) (string, []string) {
 	return cmd, args
 }
 
-// isOwner cek apakah user adalah owner
+
 func (b *BotClient) isOwner(jid types.JID) bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	// Cek dengan JID string
+
 	if b.Owners[jid.String()] {
 		return true
 	}
 
-	// Cek dengan user saja (tanpa server)
+
 	if b.Owners[jid.User] {
 		return true
 	}
@@ -495,25 +495,25 @@ func (b *BotClient) isOwner(jid types.JID) bool {
 	return false
 }
 
-// AddOwner menambahkan owner baru
+
 func (b *BotClient) AddOwner(jid string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.Owners[jid] = true
 }
 
-// RemoveOwner menghapus owner
+
 func (b *BotClient) RemoveOwner(jid string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	delete(b.Owners, jid)
 }
 
-// Event Handler untuk WhatsApp events
+
 func (b *BotClient) EventHandler(evt any) {
 	switch v := evt.(type) {
 	case *events.Message:
-		// Handle pesan dengan context background
+
 		ctx := context.Background()
 		b.HandleMessage(ctx, v)
 

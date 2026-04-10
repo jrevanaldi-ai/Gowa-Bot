@@ -17,7 +17,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// InstagramMetadata adalah metadata untuk command instagram
+
 var InstagramMetadata = &lib.CommandMetadata{
 	Cmd:       "instagram",
 	Tag:       "download",
@@ -28,7 +28,7 @@ var InstagramMetadata = &lib.CommandMetadata{
 	Alias:     []string{"ig", "igdl", "reels"},
 }
 
-// InstagramResponse struktur response dari API Instagram
+
 type InstagramResponse struct {
 	Creator string   `json:"creator"`
 	Source  string   `json:"source"`
@@ -40,9 +40,9 @@ type InstagramResponse struct {
 	Images  []string `json:"images"`
 }
 
-// InstagramHandler menangani command instagram
+
 func InstagramHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument
+
 	if len(ctx.Args) == 0 {
 		message := "❌ *Masukkan link Instagram!*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -55,10 +55,10 @@ func InstagramHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Join semua args menjadi URL
+
 	igURL := joinStrings(ctx.Args, " ")
 
-	// Validasi URL Instagram
+
 	if !isInstagramURL(igURL) {
 		message := "❌ *URL Instagram tidak valid!*\n\n" +
 			"┌─⦿ *Info*\n" +
@@ -69,7 +69,7 @@ func InstagramHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Fetch dari API
+
 	apiURL := "https://api.azbry.com/api/download/instagram?url=" + url.QueryEscape(igURL)
 
 	igResp, err := fetchInstagramAPI(apiURL)
@@ -82,7 +82,7 @@ func InstagramHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Validasi response
+
 	if !igResp.Status {
 		errorMsg := "❌ *Gagal download!*\n\n" +
 			"┌─⦿ *Info*\n" +
@@ -92,11 +92,11 @@ func InstagramHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Kirim media berdasarkan type
+
 	return sendInstagramMedia(ctx, igResp)
 }
 
-// fetchInstagramAPI mengambil data dari API Instagram
+
 func fetchInstagramAPI(apiURL string) (*InstagramResponse, error) {
 	client := &http.Client{
 		Timeout: 60 * time.Second,
@@ -133,7 +133,7 @@ func fetchInstagramAPI(apiURL string) (*InstagramResponse, error) {
 	return &igResp, nil
 }
 
-// sendInstagramMedia mengirim media dari Instagram
+
 func sendInstagramMedia(ctx *lib.CommandContext, data *InstagramResponse) error {
 	if data.Type == "video" && len(data.Videos) > 0 {
 		return sendInstagramVideo(ctx, data)
@@ -149,11 +149,11 @@ func sendInstagramMedia(ctx *lib.CommandContext, data *InstagramResponse) error 
 	return nil
 }
 
-// sendInstagramVideo mengirim video dari Instagram
+
 func sendInstagramVideo(ctx *lib.CommandContext, data *InstagramResponse) error {
 	videoURL := data.Videos[0]
 
-	// Download video
+
 	videoData, err := downloadFileFast(videoURL)
 	if err != nil {
 		errorMsg := "❌ *Gagal download video!*\n\n" +
@@ -164,13 +164,13 @@ func sendInstagramVideo(ctx *lib.CommandContext, data *InstagramResponse) error 
 		return nil
 	}
 
-	// Upload ke WhatsApp
+
 	uploadResp, err := ctx.Client.Upload(context.Background(), videoData, gowa.MediaVideo)
 	if err != nil {
 		return fmt.Errorf("failed to upload video: %w", err)
 	}
 
-	// Buat pesan video
+
 	senderStr := ctx.Sender.String()
 	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
 	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
@@ -214,22 +214,22 @@ func sendInstagramVideo(ctx *lib.CommandContext, data *InstagramResponse) error 
 	return nil
 }
 
-// sendInstagramImages mengirim gambar dari Instagram (bisa multiple)
+
 func sendInstagramImages(ctx *lib.CommandContext, data *InstagramResponse) error {
 	for i, imgURL := range data.Images {
-		// Download gambar
+
 		imgData, err := downloadFileFast(imgURL)
 		if err != nil {
 			continue
 		}
 
-		// Upload ke WhatsApp
+
 		uploadResp, err := ctx.Client.Upload(context.Background(), imgData, gowa.MediaImage)
 		if err != nil {
 			continue
 		}
 
-		// Buat pesan gambar
+
 		senderStr := ctx.Sender.String()
 		mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
 		adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
@@ -273,17 +273,17 @@ func sendInstagramImages(ctx *lib.CommandContext, data *InstagramResponse) error
 	return nil
 }
 
-// isInstagramURL cek apakah URL valid dari Instagram
+
 func isInstagramURL(url string) bool {
 	return containsString(url, "instagram.com/")
 }
 
-// containsString cek apakah string mengandung substring
+
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && s != "" && (s == substr || len(s) > 0 && containsSubstring(s, substr))
 }
 
-// containsSubstring helper
+
 func containsSubstring(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {

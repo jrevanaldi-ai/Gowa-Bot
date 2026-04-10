@@ -8,7 +8,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// SetmodeMetadata adalah metadata untuk command setmode
+
 var SetmodeMetadata = &lib.CommandMetadata{
 	Cmd:       "setmode",
 	Tag:       "owner",
@@ -19,16 +19,16 @@ var SetmodeMetadata = &lib.CommandMetadata{
 	Alias:     []string{"mode"},
 }
 
-// SetmodeHandler menangani command setmode
+
 func SetmodeHandler(ctx *lib.CommandContext) error {
-	// Hanya owner yang bisa menggunakan
+
 	if !ctx.IsOwner {
 		message := "❌ Command ini hanya untuk owner!"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-	// Cek apakah ada argument
+
 	if len(ctx.Args) == 0 {
 		message := "*📋 Mode Bot*\n\n" +
 			"Usage:\n" +
@@ -38,7 +38,7 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Parse argument
+
 	modeArg := strings.ToLower(ctx.Args[0])
 
 	var newMode bool
@@ -60,12 +60,12 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Set mode di BotClient
+
 	if ctx.BotClient != nil {
 		ctx.BotClient.SetSelfMode(newMode)
 	}
 
-	// Format pesan sukses
+
 	message := fmt.Sprintf("*✅ %s Aktif*\n\n"+
 		"Usage:\n"+
 		"• `.setmode self` - Aktifkan self mode\n"+

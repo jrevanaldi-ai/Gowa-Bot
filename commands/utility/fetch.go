@@ -19,7 +19,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// FetchMetadata adalah metadata untuk command fetch
+
 var FetchMetadata = &lib.CommandMetadata{
 	Cmd:       "fetch",
 	Tag:       "utility",
@@ -30,22 +30,22 @@ var FetchMetadata = &lib.CommandMetadata{
 	Alias:     []string{"curl", "http"},
 }
 
-// FetchHandler menangani command fetch
+
 func FetchHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument
+
 	if len(ctx.Args) == 0 {
 		return showFetchHelp(ctx)
 	}
 
-	// Parse arguments
+
 	args := parseFetchArgs(ctx.Args)
 
-	// Cek flag -help
+
 	if args.Help {
 		return showFetchHelp(ctx)
 	}
 
-	// Validasi URL
+
 	if args.URL == "" {
 		message := "❌ URL tidak boleh kosong!\n\n" +
 			"Contoh:\n" +
@@ -54,7 +54,7 @@ func FetchHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Validasi protocol URL
+
 	if !strings.HasPrefix(args.URL, "http://") && !strings.HasPrefix(args.URL, "https://") {
 		message := "❌ URL harus dimulai dengan http:// atau https://\n\n" +
 			"Contoh:\n" +
@@ -63,11 +63,11 @@ func FetchHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Kirim request
+
 	return executeFetchRequest(ctx, args)
 }
 
-// FetchArgs argument untuk fetch command
+
 type FetchArgs struct {
 	URL       string
 	Method    string
@@ -75,10 +75,10 @@ type FetchArgs struct {
 	Data      string
 	Timeout   int
 	Help      bool
-	MediaMode bool // Jika true, force download media file
+	MediaMode bool
 }
 
-// parseFetchArgs memparse arguments dari command
+
 func parseFetchArgs(args []string) *FetchArgs {
 	result := &FetchArgs{
 		Method:    "GET",
@@ -92,7 +92,7 @@ func parseFetchArgs(args []string) *FetchArgs {
 	for i < len(args) {
 		arg := args[i]
 
-		// Cek flags
+
 		if arg == "-h" || arg == "--help" || arg == "-help" {
 			result.Help = true
 			i++
@@ -128,7 +128,7 @@ func parseFetchArgs(args []string) *FetchArgs {
 		if arg == "-d" || arg == "--data" {
 			if i+1 < len(args) {
 				result.Data = args[i+1]
-				result.Method = "POST" // Auto set to POST if data provided
+				result.Method = "POST"
 				i += 2
 				continue
 			}
@@ -136,7 +136,7 @@ func parseFetchArgs(args []string) *FetchArgs {
 
 		if arg == "-t" || arg == "--timeout" {
 			if i+1 < len(args) {
-				// Parse timeout (dalam detik)
+
 				timeout := 30
 				fmt.Sscanf(args[i+1], "%d", &timeout)
 				result.Timeout = timeout
@@ -145,7 +145,7 @@ func parseFetchArgs(args []string) *FetchArgs {
 			}
 		}
 
-		// Jika bukan flag, anggap sebagai URL
+
 		if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
 			result.URL = arg
 			i++
@@ -158,7 +158,7 @@ func parseFetchArgs(args []string) *FetchArgs {
 	return result
 }
 
-// showFetchHelp menampilkan bantuan untuk fetch command
+
 func showFetchHelp(ctx *lib.CommandContext) error {
 	message := "*🌐 Fetch Command Help*\n\n" +
 		"┌─⦿ *Usage*\n" +
@@ -192,9 +192,9 @@ func showFetchHelp(ctx *lib.CommandContext) error {
 	return err
 }
 
-// executeFetchRequest mengeksekusi HTTP request
+
 func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
-	// Tampilkan loading message
+
 	loadingMsg := "🔄 *Fetching...*\n\n" +
 		"┌─⦿ *Request Info*\n" +
 		fmt.Sprintf("│ • *Method:* %s\n", args.Method) +
@@ -208,14 +208,14 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 	if err != nil {
 		return fmt.Errorf("failed to send loading message: %w", err)
 	}
-	_ = loadingResp // Ignore for now, can be used for message edit
+	_ = loadingResp
 
-	// Buat HTTP client dengan timeout
+
 	client := &http.Client{
 		Timeout: time.Duration(args.Timeout) * time.Second,
 	}
 
-	// Buat request
+
 	var req *http.Request
 	if args.Data != "" {
 		req, err = http.NewRequest(args.Method, args.URL, strings.NewReader(args.Data))
@@ -227,7 +227,7 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set headers
+
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Gowa-Bot/1.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9,id;q=0.8")
@@ -238,61 +238,61 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 		req.Header.Set(key, value)
 	}
 
-	// Eksekusi request
+
 	startTime := time.Now()
 	resp, err := client.Do(req)
 	latency := time.Since(startTime).Milliseconds()
 
 	if err != nil {
-		// Handle error
+
 		errorMsg := "❌ *Request Failed*\n\n" +
 			"┌─⦿ *Error*\n" +
 			fmt.Sprintf("│ • %s\n", err.Error()) +
 			"└──────────────"
 
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-		return nil // Don't return error, just show message
+		return nil
 	}
 	defer resp.Body.Close()
 
-	// Read response body
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// Cek content-type dari header
+
 	contentType := resp.Header.Get("Content-Type")
 	contentLength := len(body)
 
-	// Deteksi MIME type dari data jika content-type kosong atau tidak jelas
+
 	if contentType == "" || contentType == "application/octet-stream" {
 		contentType = http.DetectContentType(body)
 	}
 
-	// Cek apakah URL memiliki ekstensi media
+
 	ext := strings.ToLower(filepath.Ext(args.URL))
 	isMediaExt := isMediaExtension(ext)
 
-	// Jika media mode, content-type adalah media, atau URL memiliki ekstensi media, kirim sebagai file
+
 	if args.MediaMode || isMediaFile(contentType, args.URL) || isMediaExt {
 		return sendMediaFile(ctx, body, contentType, args.URL, latency, ext)
 	}
 
-	// Jika text dan kecil, tampilkan sebagai text
+
 	if isTextFile(contentType, args.URL) && contentLength < 5000 {
 		responseMsg := formatFetchResponse(resp, body, latency, args.URL)
 		_, err = ctx.SendMessage(helper.CreateSimpleReply(responseMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-	// Jika file terlalu besar untuk ditampilkan, tawarkan untuk download
+
 	if contentLength > 5000 {
 		fileName := getFileNameFromURL(args.URL)
 		if fileName == "" {
 			fileName = "download"
 		}
-		
+
 		message := fmt.Sprintf("*📦 File Response*\n\n"+
 			"┌─⦿ *Info*\n"+
 			fmt.Sprintf("│ • *Size:* %s\n", formatFileSize(contentLength))+
@@ -305,21 +305,21 @@ func executeFetchRequest(ctx *lib.CommandContext, args *FetchArgs) error {
 		return err
 	}
 
-	// Default: tampilkan sebagai text
+
 	responseMsg := formatFetchResponse(resp, body, latency, args.URL)
 	_, err = ctx.SendMessage(helper.CreateSimpleReply(responseMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }
 
-// formatFetchResponse memformat response untuk ditampilkan
+
 func formatFetchResponse(resp *http.Response, body []byte, latency int64, url string) string {
-	// Truncate body jika terlalu panjang (max 2000 karakter)
+
 	bodyStr := string(body)
 	if len(bodyStr) > 2000 {
 		bodyStr = bodyStr[:2000] + "\n\n... (truncated)"
 	}
 
-	// Format headers
+
 	var headersBuilder strings.Builder
 	for key, values := range resp.Header {
 		for _, value := range values {
@@ -327,7 +327,7 @@ func formatFetchResponse(resp *http.Response, body []byte, latency int64, url st
 		}
 	}
 
-	// Parse URL untuk display
+
 	parsedURL, _ := neturl.Parse(url)
 	host := ""
 	if parsedURL != nil {
@@ -352,7 +352,7 @@ func formatFetchResponse(resp *http.Response, body []byte, latency int64, url st
 		"┌─⦿ *Body*\n" +
 		"│ ```\n"
 
-	// Format body (truncate untuk preview)
+
 	previewBody := bodyStr
 	if len(previewBody) > 1500 {
 		previewBody = previewBody[:1500] + "\n... (truncated, see full in next message)"
@@ -364,7 +364,7 @@ func formatFetchResponse(resp *http.Response, body []byte, latency int64, url st
 	return message
 }
 
-// getStatusText mendapatkan text untuk status code
+
 func getStatusText(code int) string {
 	switch code {
 	case 200:
@@ -396,7 +396,7 @@ func getStatusText(code int) string {
 	}
 }
 
-// truncateString memotong string jika terlalu panjang
+
 func truncateString(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
@@ -404,7 +404,7 @@ func truncateString(s string, maxLen int) string {
 	return s[:maxLen-3] + "..."
 }
 
-// getModeText mendapatkan text untuk mode
+
 func getModeText(mediaMode bool) string {
 	if mediaMode {
 		return "Media Download 📥"
@@ -412,29 +412,29 @@ func getModeText(mediaMode bool) string {
 	return "Text Response 📝"
 }
 
-// isMediaExtension cek apakah ekstensi adalah ekstensi media
+
 func isMediaExtension(ext string) bool {
 	mediaExtensions := []string{
-		// Images
+
 		".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".ico", ".svg",
-		// Audio
+
 		".mp3", ".wav", ".ogg", ".aac", ".m4a", ".flac", ".wma",
-		// Video
+
 		".mp4", ".webm", ".avi", ".mkv", ".mov", ".wmv", ".flv",
-		// Documents
+
 		".pdf", ".zip", ".rar", ".tar", ".gz", ".doc", ".docx", ".xls", ".xlsx",
 	}
-	
+
 	for _, mediaExt := range mediaExtensions {
 		if ext == mediaExt {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
-// isImageExtension cek apakah ekstensi adalah image
+
 func isImageExtension(ext string) bool {
 	imageExtensions := []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".ico", ".svg"}
 	for _, imgExt := range imageExtensions {
@@ -445,7 +445,7 @@ func isImageExtension(ext string) bool {
 	return false
 }
 
-// isAudioExtension cek apakah ekstensi adalah audio
+
 func isAudioExtension(ext string) bool {
 	audioExtensions := []string{".mp3", ".wav", ".ogg", ".aac", ".m4a", ".flac", ".wma"}
 	for _, audExt := range audioExtensions {
@@ -456,7 +456,7 @@ func isAudioExtension(ext string) bool {
 	return false
 }
 
-// isVideoExtension cek apakah ekstensi adalah video
+
 func isVideoExtension(ext string) bool {
 	videoExtensions := []string{".mp4", ".webm", ".avi", ".mkv", ".mov", ".wmv", ".flv"}
 	for _, vidExt := range videoExtensions {
@@ -467,23 +467,23 @@ func isVideoExtension(ext string) bool {
 	return false
 }
 
-// isMediaFile cek apakah content-type atau URL mengindikasikan media file
+
 func isMediaFile(contentType, url string) bool {
-	// Cek content-type
+
 	if isImageType(contentType) || isAudioType(contentType) || isVideoType(contentType) {
 		return true
 	}
 
-	// Cek dari ekstensi file di URL
+
 	ext := strings.ToLower(filepath.Ext(url))
 	mediaExtensions := []string{
-		// Images
+
 		".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".ico", ".svg",
-		// Audio
+
 		".mp3", ".wav", ".ogg", ".aac", ".m4a", ".flac", ".wma",
-		// Video
+
 		".mp4", ".webm", ".avi", ".mkv", ".mov", ".wmv", ".flv",
-		// Documents
+
 		".pdf", ".zip", ".rar", ".tar", ".gz", ".doc", ".docx", ".xls", ".xlsx",
 	}
 
@@ -496,22 +496,22 @@ func isMediaFile(contentType, url string) bool {
 	return false
 }
 
-// isImageType cek apakah content-type adalah image
+
 func isImageType(contentType string) bool {
 	return strings.HasPrefix(contentType, "image/")
 }
 
-// isAudioType cek apakah content-type adalah audio
+
 func isAudioType(contentType string) bool {
 	return strings.HasPrefix(contentType, "audio/")
 }
 
-// isVideoType cek apakah content-type adalah video
+
 func isVideoType(contentType string) bool {
 	return strings.HasPrefix(contentType, "video/")
 }
 
-// isTextFile cek apakah content-type adalah text
+
 func isTextFile(contentType, url string) bool {
 	if strings.HasPrefix(contentType, "text/") {
 		return true
@@ -523,7 +523,7 @@ func isTextFile(contentType, url string) bool {
 		return true
 	}
 
-	// Cek dari ekstensi
+
 	ext := strings.ToLower(filepath.Ext(url))
 	textExtensions := []string{".txt", ".json", ".xml", ".md", ".html", ".css", ".js"}
 
@@ -536,30 +536,30 @@ func isTextFile(contentType, url string) bool {
 	return false
 }
 
-// sendMediaFile mengirim file media ke WhatsApp
+
 func sendMediaFile(ctx *lib.CommandContext, data []byte, contentType, url string, latency int64, urlExt string) error {
 	fileName := getFileNameFromURL(url)
 	if fileName == "" {
 		fileName = "download"
 	}
 
-	// Gunakan ekstensi dari URL jika ada, jika tidak gunakan dari MIME type
+
 	ext := urlExt
 	if ext == "" || !isMediaExtension(ext) {
 		ext = getExtensionFromMimeType(contentType)
 	}
-	
+
 	if !hasExtension(fileName) && ext != "" {
 		fileName += ext
 	}
 
-	// Deteksi ulang content-type dari data untuk memastikan akurasi
+
 	detectedType := http.DetectContentType(data)
 	if contentType == "" || contentType == "application/octet-stream" {
 		contentType = detectedType
 	}
 
-	// Kirim berdasarkan tipe media
+
 	var err error
 	switch {
 	case isImageType(contentType) || isImageExtension(urlExt):
@@ -579,15 +579,15 @@ func sendMediaFile(ctx *lib.CommandContext, data []byte, contentType, url string
 	return nil
 }
 
-// sendImageMessage mengirim pesan gambar
+
 func sendImageMessage(ctx *lib.CommandContext, data []byte, fileName string, latency int64) error {
-	// Upload gambar
+
 	resp, err := ctx.Client.Upload(context.Background(), data, gowa.MediaImage)
 	if err != nil {
 		return fmt.Errorf("failed to upload image: %w", err)
 	}
 
-	// Buat pesan gambar
+
 	imageMsg := &waE2E.Message{
 		ImageMessage: &waE2E.ImageMessage{
 			URL:           proto.String(resp.URL),
@@ -601,22 +601,22 @@ func sendImageMessage(ctx *lib.CommandContext, data []byte, fileName string, lat
 		},
 	}
 
-	// Tambahkan reply context
+
 	imageMsg = helper.BuildReplyMessage(imageMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
 
 	_, err = ctx.SendMessage(imageMsg)
 	return err
 }
 
-// sendAudioMessage mengirim pesan audio
+
 func sendAudioMessage(ctx *lib.CommandContext, data []byte, fileName string, latency int64) error {
-	// Upload audio
+
 	resp, err := ctx.Client.Upload(context.Background(), data, gowa.MediaAudio)
 	if err != nil {
 		return fmt.Errorf("failed to upload audio: %w", err)
 	}
 
-	// Buat pesan audio
+
 	audioMsg := &waE2E.Message{
 		AudioMessage: &waE2E.AudioMessage{
 			URL:           proto.String(resp.URL),
@@ -634,15 +634,15 @@ func sendAudioMessage(ctx *lib.CommandContext, data []byte, fileName string, lat
 	return err
 }
 
-// sendVideoMessage mengirim pesan video
+
 func sendVideoMessage(ctx *lib.CommandContext, data []byte, fileName string, latency int64) error {
-	// Upload video
+
 	resp, err := ctx.Client.Upload(context.Background(), data, gowa.MediaVideo)
 	if err != nil {
 		return fmt.Errorf("failed to upload video: %w", err)
 	}
 
-	// Buat pesan video
+
 	videoMsg := &waE2E.Message{
 		VideoMessage: &waE2E.VideoMessage{
 			URL:           proto.String(resp.URL),
@@ -657,22 +657,22 @@ func sendVideoMessage(ctx *lib.CommandContext, data []byte, fileName string, lat
 		},
 	}
 
-	// Tambahkan reply context
+
 	videoMsg = helper.BuildReplyMessage(videoMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
 
 	_, err = ctx.SendMessage(videoMsg)
 	return err
 }
 
-// sendDocumentMessage mengirim pesan dokumen
+
 func sendDocumentMessage(ctx *lib.CommandContext, data []byte, fileName, contentType string, latency int64) error {
-	// Upload dokumen
+
 	resp, err := ctx.Client.Upload(context.Background(), data, gowa.MediaDocument)
 	if err != nil {
 		return fmt.Errorf("failed to upload document: %w", err)
 	}
 
-	// Buat pesan dokumen
+
 	docMsg := &waE2E.Message{
 		DocumentMessage: &waE2E.DocumentMessage{
 			URL:           proto.String(resp.URL),
@@ -687,14 +687,14 @@ func sendDocumentMessage(ctx *lib.CommandContext, data []byte, fileName, content
 		},
 	}
 
-	// Tambahkan reply context
+
 	docMsg = helper.BuildReplyMessage(docMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String())
 
 	_, err = ctx.SendMessage(docMsg)
 	return err
 }
 
-// getFileNameFromURL mendapatkan nama file dari URL
+
 func getFileNameFromURL(url string) string {
 	parsed, err := neturl.Parse(url)
 	if err != nil {
@@ -706,12 +706,12 @@ func getFileNameFromURL(url string) string {
 		return ""
 	}
 
-	// Dapatkan nama file dari path
+
 	_, fileName := filepath.Split(path)
 	return fileName
 }
 
-// getExtensionFromMimeType mendapatkan ekstensi file dari MIME type
+
 func getExtensionFromMimeType(mimeType string) string {
 	extensions, err := mime.ExtensionsByType(mimeType)
 	if err != nil || len(extensions) == 0 {
@@ -720,13 +720,13 @@ func getExtensionFromMimeType(mimeType string) string {
 	return extensions[0]
 }
 
-// hasExtension cek apakah filename sudah punya ekstensi
+
 func hasExtension(fileName string) bool {
 	ext := filepath.Ext(fileName)
 	return ext != "" && ext != "."
 }
 
-// formatFileSize memformat ukuran file menjadi human readable
+
 func formatFileSize(size int) string {
 	const (
 		KB = 1024

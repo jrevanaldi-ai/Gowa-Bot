@@ -17,7 +17,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// SpotifyMetadata adalah metadata untuk command spotify
+
 var SpotifyMetadata = &lib.CommandMetadata{
 	Cmd:       "spotify",
 	Tag:       "download",
@@ -28,7 +28,7 @@ var SpotifyMetadata = &lib.CommandMetadata{
 	Alias:     []string{"sp", "splay"},
 }
 
-// SpotifyResponse struktur response dari API Spotify
+
 type SpotifyResponse struct {
 	Creator string          `json:"creator"`
 	Source  string          `json:"source"`
@@ -37,7 +37,7 @@ type SpotifyResponse struct {
 	Result  SpotifyTrack    `json:"result"`
 }
 
-// SpotifyTrack informasi track dari Spotify
+
 type SpotifyTrack struct {
 	Title        string `json:"title"`
 	Artist       string `json:"artist"`
@@ -49,9 +49,9 @@ type SpotifyTrack struct {
 	RawLink      string `json:"rawLink"`
 }
 
-// SpotifyHandler menangani command spotify
+
 func SpotifyHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument
+
 	if len(ctx.Args) == 0 {
 		message := "❌ *Masukkan judul lagu!*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -64,10 +64,10 @@ func SpotifyHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Join semua args menjadi query
+
 	query := joinStrings(ctx.Args, " ")
 
-	// Fetch dari API
+
 	apiURL := "https://api.azbry.com/api/download/spoplay?q=" + url.QueryEscape(query)
 
 	spResp, err := fetchSpotifyAPI(apiURL)
@@ -80,7 +80,7 @@ func SpotifyHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Validasi response
+
 	if !spResp.Status || spResp.Result.DownloadLink == "" {
 		errorMsg := "❌ *Lagu tidak ditemukan!*\n\n" +
 			"┌─⦿ *Info*\n" +
@@ -91,11 +91,11 @@ func SpotifyHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Langsung download dan kirim audio
+
 	return sendSpotifyAudio(ctx, spResp)
 }
 
-// fetchSpotifyAPI mengambil data dari API Spotify
+
 func fetchSpotifyAPI(apiURL string) (*SpotifyResponse, error) {
 	client := &http.Client{
 		Timeout: 60 * time.Second,
@@ -132,11 +132,11 @@ func fetchSpotifyAPI(apiURL string) (*SpotifyResponse, error) {
 	return &spResp, nil
 }
 
-// sendSpotifyAudio mengirim audio dari Spotify
+
 func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 	result := data.Result
 
-	// Download audio dari API
+
 	audioData, err := downloadFileFast(result.DownloadLink)
 	if err != nil {
 		errorMsg := "❌ *Gagal download audio!*\n\n" +
@@ -147,16 +147,16 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 		return nil
 	}
 
-	// Upload ke WhatsApp
+
 	uploadResp, err := ctx.Client.Upload(context.Background(), audioData, gowa.MediaAudio)
 	if err != nil {
 		return fmt.Errorf("failed to upload audio: %w", err)
 	}
 
-	// Parse duration (sudah dalam detik dari API)
+
 	durationSeconds := uint32(result.Duration)
 
-	// Buat pesan audio
+
 	senderStr := ctx.Sender.String()
 	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
 	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA

@@ -7,7 +7,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// PauseJadibotMetadata adalah metadata untuk command pausejadibot
+
 var PauseJadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "pausejadibot",
 	Tag:       "jadibot",
@@ -18,9 +18,9 @@ var PauseJadibotMetadata = &lib.CommandMetadata{
 	Alias:     []string{"pausejb", "jeda"},
 }
 
-// PauseJadibotHandler menangani command pausejadibot
+
 func PauseJadibotHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument (ID jadibot)
+
 	if len(ctx.Args) == 0 {
 		message := "*⏸️ Pause Jadibot*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -40,7 +40,7 @@ func PauseJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah SessionManager tersedia
+
 	if ctx.JadibotSessionManager == nil {
 		message := "❌ *Fitur Jadibot belum diaktifkan!*\n\n" +
 			"_SessionManager belum diinisialisasi. Hubungi admin bot._"
@@ -48,10 +48,10 @@ func PauseJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Ambil ID jadibot
+
 	jadibotID := ctx.Args[0]
 
-	// Cek apakah jadibot milik user
+
 	botInfo, err := ctx.JadibotSessionManager.GetJadibotInfo(jadibotID)
 	if err != nil {
 		message := "❌ *Jadibot tidak ditemukan!*\n\n" +
@@ -66,7 +66,7 @@ func PauseJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Verifikasi ownership
+
 	if botInfo.OwnerJID != ctx.Sender.String() {
 		message := "❌ *Akses Ditolak!*\n\n" +
 			"┌─⦿ *Error*\n" +
@@ -79,7 +79,7 @@ func PauseJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah jadibot sedang running
+
 	isRunning := ctx.JadibotSessionManager.IsRunning(jadibotID)
 	if !isRunning {
 		message := "ℹ️ *Jadibot Tidak Sedang Berjalan*\n\n" +
@@ -94,7 +94,7 @@ func PauseJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Pause jadibot
+
 	if err := ctx.JadibotSessionManager.PauseJadibot(jadibotID); err != nil {
 		message := "❌ *Gagal pause jadibot!*\n\n" +
 			"┌─⦿ *Error*\n" +
@@ -104,7 +104,7 @@ func PauseJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Sukses
+
 	message := "✅ *Jadibot Berhasil Di-Pause!*\n\n" +
 		"┌─⦿ *Info*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -122,7 +122,7 @@ func PauseJadibotHandler(ctx *lib.CommandContext) error {
 	return err
 }
 
-// ResumeJadibotMetadata adalah metadata untuk command resumejadibot
+
 var ResumeJadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "resumejadibot",
 	Tag:       "jadibot",
@@ -133,9 +133,9 @@ var ResumeJadibotMetadata = &lib.CommandMetadata{
 	Alias:     []string{"resumejb", "lanjut"},
 }
 
-// ResumeJadibotHandler menangani command resumejadibot
+
 func ResumeJadibotHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument (ID jadibot)
+
 	if len(ctx.Args) == 0 {
 		message := "*▶️ Resume Jadibot*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -155,7 +155,7 @@ func ResumeJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah SessionManager tersedia
+
 	if ctx.JadibotSessionManager == nil {
 		message := "❌ *Fitur Jadibot belum diaktifkan!*\n\n" +
 			"_SessionManager belum diinisialisasi. Hubungi admin bot._"
@@ -163,10 +163,10 @@ func ResumeJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Ambil ID jadibot
+
 	jadibotID := ctx.Args[0]
 
-	// Cek apakah jadibot milik user
+
 	botInfo, err := ctx.JadibotSessionManager.GetJadibotInfo(jadibotID)
 	if err != nil {
 		message := "❌ *Jadibot tidak ditemukan!*\n\n" +
@@ -181,7 +181,7 @@ func ResumeJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Verifikasi ownership
+
 	if botInfo.OwnerJID != ctx.Sender.String() {
 		message := "❌ *Akses Ditolak!*\n\n" +
 			"┌─⦿ *Error*\n" +
@@ -194,7 +194,7 @@ func ResumeJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah jadibot sudah running
+
 	isRunning := ctx.JadibotSessionManager.IsRunning(jadibotID)
 	if isRunning {
 		message := "ℹ️ *Jadibot Sudah Berjalan*\n\n" +
@@ -210,7 +210,7 @@ func ResumeJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Kirim pesan loading
+
 	loadingMsg := "🔄 *Memproses resume jadibot...*\n\n" +
 		"┌─⦿ *Info*\n" +
 		fmt.Sprintf("│ • ID: %s\n", jadibotID) +
@@ -222,7 +222,7 @@ func ResumeJadibotHandler(ctx *lib.CommandContext) error {
 		return fmt.Errorf("failed to send loading message: %w", err)
 	}
 
-	// Resume jadibot
+
 	if err := ctx.JadibotSessionManager.ResumeJadibot(ctx.Ctx, jadibotID); err != nil {
 		message := "❌ *Gagal resume jadibot!*\n\n" +
 			"┌─⦿ *Error*\n" +
@@ -235,7 +235,7 @@ func ResumeJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Sukses
+
 	message := "✅ *Jadibot Berhasil Di-Resume!*\n\n" +
 		"┌─⦿ *Info*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +

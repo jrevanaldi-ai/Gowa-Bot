@@ -8,7 +8,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// CheckEphemeralMetadata adalah metadata untuk command checkephemeral
+
 var CheckEphemeralMetadata = &lib.CommandMetadata{
 	Cmd:       "checkephemeral",
 	Tag:       "debug",
@@ -19,21 +19,21 @@ var CheckEphemeralMetadata = &lib.CommandMetadata{
 	Alias:     []string{"ce"},
 }
 
-// CheckEphemeralHandler menangani command checkephemeral
+
 func CheckEphemeralHandler(ctx *lib.CommandContext) error {
-	// Hanya berfungsi di group
+
 	if !ctx.IsGroup {
 		message := "❌ Command ini hanya bisa digunakan di group!"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-	// Dapatkan ephemeral helper dari client
+
 	type ephemeralChecker interface {
 		GetEphemeralConfig(ctx context.Context, chatID string) (*EphemeralConfig, error)
 	}
 
-	// Get group config
+
 	config, err := getEphemeralConfig(ctx)
 	if err != nil {
 		message := fmt.Sprintf("❌ Error: %v", err)
@@ -41,7 +41,7 @@ func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Format pesan
+
 	var message string
 	if config.IsEphemeral && config.DisappearingTimer > 0 {
 		timer := formatTimer(config.DisappearingTimer)
@@ -67,15 +67,15 @@ func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 	return err
 }
 
-// EphemeralConfig konfigurasi ephemeral
+
 type EphemeralConfig struct {
 	IsEphemeral       bool
 	DisappearingTimer uint32
 }
 
-// getEphemeralConfig mendapatkan konfigurasi ephemeral dari group
+
 func getEphemeralConfig(ctx *lib.CommandContext) (*EphemeralConfig, error) {
-	// Get group info
+
 	groupInfo, err := ctx.Client.GetGroupInfo(ctx.Ctx, ctx.Chat)
 	if err != nil {
 		return &EphemeralConfig{}, fmt.Errorf("failed to get group info: %w", err)
@@ -87,7 +87,7 @@ func getEphemeralConfig(ctx *lib.CommandContext) (*EphemeralConfig, error) {
 	}, nil
 }
 
-// formatTimer memformat timer menjadi string yang readable
+
 func formatTimer(seconds uint32) string {
 	if seconds == 0 {
 		return "Off"

@@ -6,16 +6,16 @@ import (
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
 )
 
-// ReplyConfig konfigurasi untuk reply message
+
 type ReplyConfig struct {
 	ReplyToMsgID string
 	SenderJID    string
-	ChatJID      string // JID dari chat/group (bukan sender)
+	ChatJID      string
 }
 
-// CreateSimpleReply membuat Message dengan reply sederhana (tanpa ExternalAdReply)
+
 func CreateSimpleReply(text string, replyToMsgID string, senderJID string, chatJID string) *waE2E.Message {
-	// RemoteJID untuk reply harusnya Chat JID, bukan sender JID
+
 	remoteJID := chatJID
 	if remoteJID == "" {
 		remoteJID = senderJID
@@ -28,7 +28,7 @@ func CreateSimpleReply(text string, replyToMsgID string, senderJID string, chatJ
 				StanzaID:    &replyToMsgID,
 				Participant: &senderJID,
 				RemoteJID:   &remoteJID,
-				// Clear other ContextInfo fields
+
 				Expiration:              nil,
 				EphemeralSettingTimestamp: nil,
 				ExternalAdReply:         nil,
@@ -39,12 +39,12 @@ func CreateSimpleReply(text string, replyToMsgID string, senderJID string, chatJ
 	}
 }
 
-// CreateSimpleReplyLegacy versi lama (backward compatibility)
+
 func CreateSimpleReplyLegacy(text string, replyToMsgID string, senderJID string) *waE2E.Message {
 	return CreateSimpleReply(text, replyToMsgID, senderJID, senderJID)
 }
 
-// CreateReplyFromContext membuat reply message dari CommandContext (lebih mudah dipakai)
+
 func CreateReplyFromContext(text string, ctx interface{
 	GetMessageID() string
 	GetSenderJID() string
@@ -53,7 +53,7 @@ func CreateReplyFromContext(text string, ctx interface{
 	return CreateSimpleReply(text, ctx.GetMessageID(), ctx.GetSenderJID(), ctx.GetChatJID())
 }
 
-// FormatFileSize memformat ukuran file menjadi human readable
+
 func FormatFileSize(size int64) string {
 	const (
 		KB = 1024
@@ -71,18 +71,18 @@ func FormatFileSize(size int64) string {
 	return fmt.Sprintf("%.2f GB", float64(size)/GB)
 }
 
-// BuildReplyMessage menambahkan ContextInfo dengan reply ke pesan asli
-// Fungsi ini bisa dipakai untuk semua tipe pesan (text, video, audio, document, dll)
+
+
 func BuildReplyMessage(message *waE2E.Message, replyToMsgID string, senderJID string, chatJID string) *waE2E.Message {
 	remoteJID := chatJID
 	if remoteJID == "" {
 		remoteJID = senderJID
 	}
 
-	// Tambahkan ContextInfo ke berbagai tipe pesan
+
 	switch {
 	case message.Conversation != nil:
-		// Text message - convert ke ExtendedTextMessage dengan ContextInfo
+
 		message = &waE2E.Message{
 			ExtendedTextMessage: &waE2E.ExtendedTextMessage{
 				Text: message.Conversation,
@@ -95,7 +95,7 @@ func BuildReplyMessage(message *waE2E.Message, replyToMsgID string, senderJID st
 		}
 
 	case message.ExtendedTextMessage != nil:
-		// Extended text message - tambahkan/update ContextInfo
+
 		if message.ExtendedTextMessage.ContextInfo == nil {
 			message.ExtendedTextMessage.ContextInfo = &waE2E.ContextInfo{}
 		}
@@ -104,7 +104,7 @@ func BuildReplyMessage(message *waE2E.Message, replyToMsgID string, senderJID st
 		message.ExtendedTextMessage.ContextInfo.RemoteJID = &remoteJID
 
 	case message.ImageMessage != nil:
-		// Image message - tambahkan ContextInfo
+
 		if message.ImageMessage.ContextInfo == nil {
 			message.ImageMessage.ContextInfo = &waE2E.ContextInfo{}
 		}
@@ -113,7 +113,7 @@ func BuildReplyMessage(message *waE2E.Message, replyToMsgID string, senderJID st
 		message.ImageMessage.ContextInfo.RemoteJID = &remoteJID
 
 	case message.VideoMessage != nil:
-		// Video message - tambahkan ContextInfo
+
 		if message.VideoMessage.ContextInfo == nil {
 			message.VideoMessage.ContextInfo = &waE2E.ContextInfo{}
 		}
@@ -122,12 +122,12 @@ func BuildReplyMessage(message *waE2E.Message, replyToMsgID string, senderJID st
 		message.VideoMessage.ContextInfo.RemoteJID = &remoteJID
 
 	case message.AudioMessage != nil:
-		// Audio message - AudioMessage tidak punya ContextInfo field
-		// Audio messages tidak support reply di WhatsApp
-		// Biarkan tanpa ContextInfo
+
+
+
 
 	case message.DocumentMessage != nil:
-		// Document message - tambahkan ContextInfo
+
 		if message.DocumentMessage.ContextInfo == nil {
 			message.DocumentMessage.ContextInfo = &waE2E.ContextInfo{}
 		}
@@ -136,7 +136,7 @@ func BuildReplyMessage(message *waE2E.Message, replyToMsgID string, senderJID st
 		message.DocumentMessage.ContextInfo.RemoteJID = &remoteJID
 
 	case message.StickerMessage != nil:
-		// Sticker message - tambahkan ContextInfo
+
 		if message.StickerMessage.ContextInfo == nil {
 			message.StickerMessage.ContextInfo = &waE2E.ContextInfo{}
 		}

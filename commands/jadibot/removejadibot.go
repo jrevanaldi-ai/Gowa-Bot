@@ -12,7 +12,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// RemoveJadibotMetadata adalah metadata untuk command removejadibot
+
 var RemoveJadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "removejadibot",
 	Tag:       "jadibot",
@@ -23,9 +23,9 @@ var RemoveJadibotMetadata = &lib.CommandMetadata{
 	Alias:     []string{"removejb", "hapusjadibot", "hapusjb"},
 }
 
-// RemoveJadibotHandler menangani command removejadibot
+
 func RemoveJadibotHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument (ID jadibot)
+
 	if len(ctx.Args) == 0 {
 		message := "*🗑️ Remove Jadibot (Owner Only)*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -47,7 +47,7 @@ func RemoveJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah SessionManager tersedia
+
 	if ctx.JadibotSessionManager == nil {
 		message := "❌ *Fitur Jadibot belum diaktifkan!*\n\n" +
 			"_SessionManager belum diinisialisasi. Hubungi admin bot._"
@@ -55,10 +55,10 @@ func RemoveJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Ambil ID jadibot
+
 	jadibotID := ctx.Args[0]
 
-	// Cek apakah jadibot ada
+
 	botInfo, err := ctx.JadibotSessionManager.GetJadibotInfo(jadibotID)
 	if err != nil {
 		message := "❌ *Jadibot tidak ditemukan!*\n\n" +
@@ -73,16 +73,16 @@ func RemoveJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah sudah ada flag --confirm
+
 	if len(ctx.Args) > 1 && ctx.Args[1] == "--confirm" {
-		// Langsung hapus dengan loading edit message
+
 		return executeRemoveJadibotWithEdit(ctx, jadibotID, botInfo)
 	}
 
-	// Cek apakah jadibot sedang running
+
 	isRunning := ctx.JadibotSessionManager.IsRunning(jadibotID)
 
-	// Kirim konfirmasi dengan detail
+
 	message := "*⚠️ KONFIRMASI HAPUS JADIBOT*\n\n" +
 		"┌─⦿ *Detail Jadibot*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", botInfo.ID) +
@@ -107,9 +107,9 @@ func RemoveJadibotHandler(ctx *lib.CommandContext) error {
 	return err
 }
 
-// executeRemoveJadibotWithEdit mengeksekusi penghapusan jadibot dengan edit message untuk loading
+
 func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, botInfo *lib.JadibotInfo) error {
-	// Step 1: Kirim loading message awal
+
 	loadingMsg := "🔄 *Menghapus jadibot...*\n\n" +
 		"┌─⦿ *Progress*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -122,7 +122,7 @@ func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, bot
 		return fmt.Errorf("failed to send loading message: %w", err)
 	}
 
-	// Extract message ID dari response menggunakan reflection
+
 	var sentMsgID string
 	respValue := reflect.ValueOf(sentResp)
 	if respValue.Kind() == reflect.Struct {
@@ -132,12 +132,12 @@ func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, bot
 		}
 	}
 
-	// Jika tidak bisa extract ID, fallback ke cara biasa
+
 	if sentMsgID == "" {
 		return executeRemoveJadibotFallback(ctx, jadibotID, botInfo)
 	}
 
-	// Helper function untuk edit message
+
 	editMessage := func(content string) {
 		editMsg := ctx.Client.BuildEdit(ctx.Chat, sentMsgID, &waE2E.Message{
 			ExtendedTextMessage: &waE2E.ExtendedTextMessage{
@@ -149,11 +149,11 @@ func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, bot
 			},
 		})
 		_, _ = ctx.Client.SendMessage(ctx.Ctx, ctx.Chat, editMsg)
-		// Beri jeda kecil agar tidak spam
+
 		time.Sleep(500 * time.Millisecond)
 	}
 
-	// Step 2: Stop jadibot jika sedang running
+
 	editMessage("🔄 *Menghapus jadibot...*\n\n" +
 		"┌─⦿ *Progress*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -175,7 +175,7 @@ func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, bot
 		}
 	}
 
-	// Step 3: Hapus session folder
+
 	editMessage("🔄 *Menghapus jadibot...*\n\n" +
 		"┌─⦿ *Progress*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -184,10 +184,10 @@ func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, bot
 		"└──────────────\n\n" +
 		"_Mohon tunggu..._")
 
-	// Jeda kecil untuk visual
+
 	time.Sleep(1 * time.Second)
 
-	// Step 4: Hapus dari database
+
 	editMessage("🔄 *Menghapus jadibot...*\n\n" +
 		"┌─⦿ *Progress*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -208,7 +208,7 @@ func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, bot
 		return err
 	}
 
-	// Step 5: Sukses - edit pesan final
+
 	editMessage("✅ *JADIBOT BERHASIL DIHAPUS!*\n\n" +
 		"┌─⦿ *Detail*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -231,9 +231,9 @@ func executeRemoveJadibotWithEdit(ctx *lib.CommandContext, jadibotID string, bot
 	return nil
 }
 
-// executeRemoveJadibotFallback fallback jika tidak bisa extract message ID
+
 func executeRemoveJadibotFallback(ctx *lib.CommandContext, jadibotID string, botInfo *lib.JadibotInfo) error {
-	// Kirim loading message biasa
+
 	loadingMsg := "🔄 *Menghapus jadibot...*\n\n" +
 		"┌─⦿ *Progress*\n" +
 		fmt.Sprintf("│ • ID: %s\n", jadibotID) +
@@ -242,7 +242,7 @@ func executeRemoveJadibotFallback(ctx *lib.CommandContext, jadibotID string, bot
 		"_Mohon tunggu..._"
 	_, _ = ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 
-	// Step 1: Stop jadibot
+
 	if ctx.JadibotSessionManager.IsRunning(jadibotID) {
 		if err := ctx.JadibotSessionManager.StopJadibot(jadibotID); err != nil {
 			return fmt.Errorf("failed to stop jadibot: %w", err)
@@ -251,12 +251,12 @@ func executeRemoveJadibotFallback(ctx *lib.CommandContext, jadibotID string, bot
 
 	time.Sleep(500 * time.Millisecond)
 
-	// Step 2: Hapus dari database
+
 	if err := ctx.JadibotSessionManager.DeleteJadibot(jadibotID); err != nil {
 		return fmt.Errorf("failed to delete jadibot: %w", err)
 	}
 
-	// Sukses
+
 	message := "✅ *Jadibot Berhasil Dihapus Secara Permanen!*\n\n" +
 		"┌─⦿ *Detail*\n" +
 		fmt.Sprintf("│ • ID: `%s`\n", jadibotID) +
@@ -276,7 +276,7 @@ func executeRemoveJadibotFallback(ctx *lib.CommandContext, jadibotID string, bot
 	return err
 }
 
-// formatBoolean memformat boolean ke string
+
 func formatBoolean(b bool) string {
 	if b {
 		return "✅ Ya"

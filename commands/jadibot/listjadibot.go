@@ -8,7 +8,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// ListJadibotMetadata adalah metadata untuk command listjadibot
+
 var ListJadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "listjadibot",
 	Tag:       "jadibot",
@@ -19,9 +19,9 @@ var ListJadibotMetadata = &lib.CommandMetadata{
 	Alias:     []string{"listjb", "jadibotlist"},
 }
 
-// ListJadibotHandler menangani command listjadibot
+
 func ListJadibotHandler(ctx *lib.CommandContext) error {
-	// Cek apakah SessionManager tersedia
+
 	if ctx.JadibotSessionManager == nil {
 		message := "❌ *Fitur Jadibot belum diaktifkan!*\n\n" +
 			"_SessionManager belum diinisialisasi. Hubungi admin bot._"
@@ -29,7 +29,7 @@ func ListJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Get jadibot by owner
+
 	jadibots, err := ctx.JadibotSessionManager.GetJadibotByOwner(ctx.Sender.String())
 	if err != nil {
 		message := "❌ *Gagal mengambil data jadibot!*\n\n" +
@@ -38,7 +38,7 @@ func ListJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Jika tidak ada jadibot
+
 	if len(jadibots) == 0 {
 		message := "*📋 Daftar Jadibot*\n\n" +
 			"┌─⦿ *Status*\n" +
@@ -57,15 +57,15 @@ func ListJadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Format daftar jadibot
+
 	message := "*📋 Daftar Jadibot Anda*\n\n" +
 		fmt.Sprintf("┌─⦿ *Total: %d bot*\n\n", len(jadibots))
 
-	// Counter untuk statistik
+
 	var activeCount, pausedCount, stoppedCount int
 
 	for i, bot := range jadibots {
-		// Update counter
+
 		switch bot.Status {
 		case "active":
 			activeCount++
@@ -79,7 +79,7 @@ func ListJadibotHandler(ctx *lib.CommandContext) error {
 			fmt.Sprintf("   • Nomor: %s\n", bot.PhoneNumber) +
 			fmt.Sprintf("   • Status: %s\n", formatJadibotStatus(bot.Status))
 
-		// Tampilkan uptime jika aktif
+
 		if bot.Status == "active" && bot.StartedAt != nil {
 			if startTime, ok := bot.StartedAt.(time.Time); ok {
 				uptime := time.Since(startTime)
@@ -89,7 +89,7 @@ func ListJadibotHandler(ctx *lib.CommandContext) error {
 			}
 		}
 
-		// Command yang tersedia untuk setiap bot
+
 		message += "   • Command:\n"
 		if bot.Status == "active" {
 			message += fmt.Sprintf("     - `.stopjadibot %s`\n", bot.ID) +
@@ -104,7 +104,7 @@ func ListJadibotHandler(ctx *lib.CommandContext) error {
 		message += "\n"
 	}
 
-	// Statistik
+
 	message += "└──────────────\n\n" +
 		"┌─⦿ *Statistik*\n" +
 		fmt.Sprintf("│ • 🟢 Aktif: %d\n", activeCount) +
@@ -120,7 +120,7 @@ func ListJadibotHandler(ctx *lib.CommandContext) error {
 	return err
 }
 
-// formatJadibotStatus memformat status jadibot dengan emoji
+
 func formatJadibotStatus(status string) string {
 	switch status {
 	case "active":
@@ -134,7 +134,7 @@ func formatJadibotStatus(status string) string {
 	}
 }
 
-// formatUptime memformat uptime menjadi string readable
+
 func formatUptime(hours, minutes, seconds int) string {
 	if hours > 0 {
 		return fmt.Sprintf("%02d:%02d:%02d", hours, minutes, seconds)

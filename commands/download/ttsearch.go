@@ -18,7 +18,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-// TTSearchMetadata adalah metadata untuk command tiktok search
+
 var TTSearchMetadata = &lib.CommandMetadata{
 	Cmd:       "ttsearch",
 	Tag:       "search",
@@ -29,14 +29,14 @@ var TTSearchMetadata = &lib.CommandMetadata{
 	Alias:     []string{"tts", "tiktoksearch"},
 }
 
-// TTSearchResponse struktur response dari API TikTok Search
+
 type TTSearchResponse struct {
 	Creator string         `json:"creator"`
 	Status  bool           `json:"status"`
 	Result  []TTSearchItem `json:"result"`
 }
 
-// TTSearchItem item video dari TikTok search
+
 type TTSearchItem struct {
 	Title    string          `json:"title"`
 	Cover    string          `json:"cover"`
@@ -45,13 +45,13 @@ type TTSearchItem struct {
 	Stats    TTSearchStats   `json:"stats"`
 }
 
-// TTSearchAuthor info author TikTok
+
 type TTSearchAuthor struct {
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
 }
 
-// TTSearchStats statistik video TikTok
+
 type TTSearchStats struct {
 	Plays    int `json:"plays"`
 	Likes    int `json:"likes"`
@@ -59,9 +59,9 @@ type TTSearchStats struct {
 	Shares   int `json:"shares"`
 }
 
-// TTSearchHandler menangani command ttsearch
+
 func TTSearchHandler(ctx *lib.CommandContext) error {
-	// Cek apakah ada argument
+
 	if len(ctx.Args) == 0 {
 		message := "❌ *Masukkan kata kunci pencarian!*\n\n" +
 			"┌─⦿ *Usage*\n" +
@@ -75,10 +75,10 @@ func TTSearchHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Join semua args menjadi query
+
 	query := joinStrings(ctx.Args, " ")
 
-	// Fetch dari API
+
 	apiURL := "https://api.azbry.com/api/search/ttsearch?q=" + url.QueryEscape(query)
 
 	searchResp, err := fetchTTSearchAPI(apiURL)
@@ -91,7 +91,7 @@ func TTSearchHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Validasi response
+
 	if !searchResp.Status || len(searchResp.Result) == 0 {
 		errorMsg := "❌ *Video tidak ditemukan!*\n\n" +
 			"┌─⦿ *Info*\n" +
@@ -101,11 +101,11 @@ func TTSearchHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Ambil video pertama dan kirim
+
 	return sendTTSearchVideo(ctx, searchResp.Result[0], 1, len(searchResp.Result))
 }
 
-// fetchTTSearchAPI mengambil data dari API TikTok Search
+
 func fetchTTSearchAPI(apiURL string) (*TTSearchResponse, error) {
 	client := &http.Client{
 		Timeout: 60 * time.Second,
@@ -142,20 +142,20 @@ func fetchTTSearchAPI(apiURL string) (*TTSearchResponse, error) {
 	return &searchResp, nil
 }
 
-// sendTTSearchVideo mengirim video dari hasil search
+
 func sendTTSearchVideo(ctx *lib.CommandContext, item TTSearchItem, index int, total int) error {
-	// Bersihkan link - kadang ada prefix "https://tikwm.com" atau "http://tikwm.com"
+
 	videoURL := item.Link
 	videoURL = strings.TrimPrefix(videoURL, "https://tikwm.com")
 	videoURL = strings.TrimPrefix(videoURL, "http://tikwm.com")
 	videoURL = strings.TrimSpace(videoURL)
 
-	// Pastikan URL valid (harus dimulai dengan http:// atau https://)
+
 	if !strings.HasPrefix(videoURL, "http://") && !strings.HasPrefix(videoURL, "https://") {
 		videoURL = "https://" + videoURL
 	}
 
-	// Download video
+
 	videoData, err := downloadFileFast(videoURL)
 	if err != nil {
 		errorMsg := "❌ *Gagal download video!*\n\n" +
@@ -166,13 +166,13 @@ func sendTTSearchVideo(ctx *lib.CommandContext, item TTSearchItem, index int, to
 		return nil
 	}
 
-	// Upload ke WhatsApp
+
 	uploadResp, err := ctx.Client.Upload(context.Background(), videoData, gowa.MediaVideo)
 	if err != nil {
 		return fmt.Errorf("failed to upload video: %w", err)
 	}
 
-	// Buat caption
+
 	title := truncateString(item.Title, 50)
 	author := item.Author.Nickname
 	views := formatNumber(item.Stats.Plays)
@@ -180,7 +180,7 @@ func sendTTSearchVideo(ctx *lib.CommandContext, item TTSearchItem, index int, to
 
 	caption := fmt.Sprintf("🎵 %s\n\n👤 %s\n👁️ %s views | ❤️ %s likes", title, author, views, likes)
 
-	// Buat pesan video
+
 	senderStr := ctx.Sender.String()
 	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
 	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
@@ -224,7 +224,7 @@ func sendTTSearchVideo(ctx *lib.CommandContext, item TTSearchItem, index int, to
 	return nil
 }
 
-// formatNumber memformat angka menjadi lebih readable
+
 func formatNumber(num int) string {
 	if num >= 1000000 {
 		return fmt.Sprintf("%.1fM", float64(num)/1000000)
