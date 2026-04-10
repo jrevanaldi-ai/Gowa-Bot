@@ -16,6 +16,7 @@ import (
 
 	"github.com/jrevanaldi-ai/gowa-bot/client"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/debug"
+	"github.com/jrevanaldi-ai/gowa-bot/commands/download"
 	general "github.com/jrevanaldi-ai/gowa-bot/commands/general"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/jadibot"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/owner"
@@ -167,6 +168,21 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(jadibot.PauseJadibotMetadata, jadibot.PauseJadibotHandler)
 	registry.Register(jadibot.ResumeJadibotMetadata, jadibot.ResumeJadibotHandler)
 	registry.Register(jadibot.RemoveJadibotMetadata, jadibot.RemoveJadibotHandler)
+
+	// Register play command (download)
+	registry.Register(download.PlayMetadata, download.PlayHandler)
+
+	// Register spotify command (download)
+	registry.Register(download.SpotifyMetadata, download.SpotifyHandler)
+
+	// Register instagram command (download)
+	registry.Register(download.InstagramMetadata, download.InstagramHandler)
+
+	// Register tiktok command (download)
+	registry.Register(download.TikTokMetadata, download.TikTokHandler)
+
+	// Register ttsearch command (search & download)
+	registry.Register(download.TTSearchMetadata, download.TTSearchHandler)
 }
 
 // getOwnerNumbers mendapatkan daftar nomor owner dari environment variable

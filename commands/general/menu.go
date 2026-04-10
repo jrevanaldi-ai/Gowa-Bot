@@ -128,7 +128,7 @@ func MenuHandler(ctx *lib.CommandContext) error {
 	externalAdReply := createExternalAdReply(
 		"GOWA-BOT",
 		"WhatsApp Bot with Gowa Library",
-		"https://files.catbox.moe/1xnz38.jpg", // Golang mascot
+		"https://raw.githubusercontent.com/jrevanaldi-ai/Images/main/Gemini_Generated_Image_pmo129pmo129pmo1.png", // Golang mascot
 		"https://github.com/jrevanaldi-ai/gowa",
 	)
 

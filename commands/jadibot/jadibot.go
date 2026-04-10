@@ -76,18 +76,25 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Cek apakah user sudah punya jadibot
-	existingBots, err := ctx.JadibotSessionManager.GetJadibotByOwner(ctx.Sender.String())
-	if err == nil && len(existingBots) > 0 {
-		message := "❌ *Anda sudah membuat jadibot!*\n\n" +
-			fmt.Sprintf("┌─⦿ *Jadibot Anda*\n│ • Jumlah: %d bot\n│ • ID: %s\n└──────────────\n\n", len(existingBots), existingBots[0].ID) +
-			"*📋 Command yang tersedia:*\n" +
-			"• `.listjadibot` - Lihat status jadibot\n" +
-			"• `.stopjadibot <id>` - Hentikan jadibot\n" +
-			"• `.pausejadibot <id>` - Pause jadibot\n" +
-			"• `.resumejadibot <id>` - Resume jadibot"
-		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-		return err
+	// Cek apakah owner (owner bisa unlimited jadibot)
+	isOwner := ctx.IsOwner
+
+	// Jika bukan owner, cek apakah user sudah punya jadibot (limit 1 untuk non-owner)
+	if !isOwner {
+		existingBots, err := ctx.JadibotSessionManager.GetJadibotByOwner(ctx.Sender.String())
+		if err == nil && len(existingBots) > 0 {
+			message := "❌ *Anda sudah membuat jadibot!*\n\n" +
+				fmt.Sprintf("┌─⦿ *Jadibot Anda*\n│ • Jumlah: %d bot\n│ • ID: %s\n└──────────────\n\n", len(existingBots), existingBots[0].ID) +
+				"*📋 Command yang tersedia:*\n" +
+				"• `.listjadibot` - Lihat status jadibot\n" +
+				"• `.stopjadibot <id>` - Hentikan jadibot\n" +
+				"• `.pausejadibot <id>` - Pause jadibot\n" +
+				"• `.resumejadibot <id>` - Resume jadibot\n\n" +
+				"*⚠️ Catatan:*\n" +
+				"• Hanya owner yang bisa membuat jadibot unlimited"
+			_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+			return err
+		}
 	}
 
 	// Kirim pesan loading
@@ -97,25 +104,25 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		"│ • Status: Membuat session...\n" +
 		"└──────────────\n\n" +
 		"_Mohon tunggu sebentar..._"
-	_, err = ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-	if err != nil {
-		return fmt.Errorf("failed to send loading message: %w", err)
+	_, sendErr := ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+	if sendErr != nil {
+		return fmt.Errorf("failed to send loading message: %w", sendErr)
 	}
 
 	// Create jadibot
-	jadibotID, err := ctx.JadibotSessionManager.CreateJadibot(ctx.Ctx, ctx.Sender.String(), phoneNumber)
-	if err != nil {
-		errorMsg := fmt.Sprintf("❌ *Gagal membuat jadibot!*\n\n┌─⦿ *Error*\n│ • %v\n└──────────────", err)
+	jadibotID, createErr := ctx.JadibotSessionManager.CreateJadibot(ctx.Ctx, ctx.Sender.String(), phoneNumber)
+	if createErr != nil {
+		errorMsg := fmt.Sprintf("❌ *Gagal membuat jadibot!*\n\n┌─⦿ *Error*\n│ • %v\n└──────────────", createErr)
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-		return err
+		return createErr
 	}
 
 	// Start jadibot (akan generate pairing code)
-	pairingCode, err := ctx.JadibotSessionManager.StartJadibot(ctx.Ctx, jadibotID, phoneNumber)
-	if err != nil {
-		errorMsg := fmt.Sprintf("❌ *Gagal memulai jadibot!*\n\n┌─⦿ *Error*\n│ • %v\n└──────────────", err)
+	pairingCode, startErr := ctx.JadibotSessionManager.StartJadibot(ctx.Ctx, jadibotID, phoneNumber)
+	if startErr != nil {
+		errorMsg := fmt.Sprintf("❌ *Gagal memulai jadibot!*\n\n┌─⦿ *Error*\n│ • %v\n└──────────────", startErr)
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-		return err
+		return startErr
 	}
 
 	// Jika pairing code tidak kosong (belum paired), kirim ke user
@@ -139,8 +146,8 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 			"• `.listjadibot` - Cek status\n" +
 			"• `.stopjadibot <id>` - Stop bot\n" +
 			"• `.pausejadibot <id>` - Pause bot"
-		_, err = ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-		return err
+		_, sendErr := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return sendErr
 	}
 
 	// Jika pairing code kosong, berarti sudah paired
@@ -155,8 +162,8 @@ func JadibotHandler(ctx *lib.CommandContext) error {
 		"• `.listjadibot` - Cek status\n" +
 		"• `.stopjadibot <id>` - Stop bot\n" +
 		"• `.pausejadibot <id>` - Pause bot"
-	_, err = ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-	return err
+	_, sendErr2 := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+	return sendErr2
 }
 
 // isValidPhoneNumber validasi format nomor telepon
