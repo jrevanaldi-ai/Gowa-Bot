@@ -62,8 +62,19 @@ func (m *DatabaseManager) createTables() error {
 		last_active_at DATETIME
 	);
 
+	CREATE TABLE IF NOT EXISTS banned (
+		id TEXT PRIMARY KEY,
+		type TEXT NOT NULL CHECK(type IN ('group', 'user')),
+		jid TEXT NOT NULL UNIQUE,
+		reason TEXT,
+		banned_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		banned_by TEXT NOT NULL
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_jadibots_owner ON jadibots(owner_jid);
 	CREATE INDEX IF NOT EXISTS idx_jadibots_status ON jadibots(status);
+	CREATE INDEX IF NOT EXISTS idx_banned_type ON banned(type);
+	CREATE INDEX IF NOT EXISTS idx_banned_jid ON banned(jid);
 	`
 
 	_, err := m.DB.Exec(query)
@@ -263,4 +274,108 @@ func (m *DatabaseManager) GetActiveJadibot() ([]JadibotInfo, error) {
 
 func (m *DatabaseManager) Close() error {
 	return m.DB.Close()
+}
+
+
+// BanJID menambahkan grup atau user ke daftar banned
+func (m *DatabaseManager) BanJID(jid string, banType string, reason string, bannedBy string) error {
+	query := `
+	INSERT OR REPLACE INTO banned (id, type, jid, reason, banned_at, banned_by)
+	VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+	`
+
+	id := fmt.Sprintf("%s_%s", banType, jid)
+	_, err := m.DB.Exec(query, id, banType, jid, reason, bannedBy)
+	return err
+}
+
+
+// UnbanJID menghapus grup atau user dari daftar banned
+func (m *DatabaseManager) UnbanJID(jid string, banType string) error {
+	query := `DELETE FROM banned WHERE type = ? AND jid = ?`
+	_, err := m.DB.Exec(query, banType, jid)
+	return err
+}
+
+
+// IsBanned mengecek apakah grup atau user sedang di-banned
+func (m *DatabaseManager) IsBanned(jid string, banType string) (bool, error) {
+	query := `SELECT COUNT(*) FROM banned WHERE type = ? AND jid = ?`
+	var count int
+	err := m.DB.QueryRow(query, banType, jid).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+
+// GetBannedList mengambil daftar semua yang di-banned
+func (m *DatabaseManager) GetBannedList(banType string) ([]map[string]string, error) {
+	var query string
+	var rows *sql.Rows
+	var err error
+
+	if banType != "" {
+		query = `SELECT id, type, jid, reason, banned_at, banned_by FROM banned WHERE type = ? ORDER BY banned_at DESC`
+		rows, err = m.DB.Query(query, banType)
+	} else {
+		query = `SELECT id, type, jid, reason, banned_at, banned_by FROM banned ORDER BY banned_at DESC`
+		rows, err = m.DB.Query(query)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []map[string]string
+	for rows.Next() {
+		var id, bType, jid, bannedBy string
+		var reason sql.NullString
+		var bannedAt string
+
+		err := rows.Scan(&id, &bType, &jid, &reason, &bannedAt, &bannedBy)
+		if err != nil {
+			return nil, err
+		}
+
+		reasonText := ""
+		if reason.Valid {
+			reasonText = reason.String
+		}
+
+		result = append(result, map[string]string{
+			"type":     bType,
+			"jid":      jid,
+			"reason":   reasonText,
+			"bannedAt": bannedAt,
+			"bannedBy": bannedBy,
+		})
+	}
+
+	return result, nil
+}
+
+
+// GetBannedCount menghitung jumlah yang di-banned berdasarkan tipe
+func (m *DatabaseManager) GetBannedCount(banType string) (int, error) {
+	var query string
+	var count int
+
+	if banType != "" {
+		query = `SELECT COUNT(*) FROM banned WHERE type = ?`
+		err := m.DB.QueryRow(query, banType).Scan(&count)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		query = `SELECT COUNT(*) FROM banned`
+		err := m.DB.QueryRow(query).Scan(&count)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return count, nil
 }

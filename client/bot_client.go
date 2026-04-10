@@ -26,19 +26,22 @@ type BotClient struct {
 	Cache                 *helper.Cache
 	EphemeralHelper       *helper.EphemeralHelper
 	JadibotSessionManager *helper.JadibotSessionManager
+	DBManager             *helper.DatabaseManager
 	Owners                map[string]bool
 	SelfMode              bool
+	Prefixes              []string
 	mu                    sync.RWMutex
 }
 
 
 type BotConfig struct {
 	Owners                []string
-	Prefix                string
+	Prefixes              []string
 	MaxWorkers            int
 	EnableCache           bool
 	SelfMode              bool
 	JadibotSessionManager *helper.JadibotSessionManager
+	DBManager             *helper.DatabaseManager
 }
 
 
@@ -62,10 +65,36 @@ func (b *BotClient) GetSelfMode() bool {
 }
 
 
+func (b *BotClient) GetDBManager() interface{} {
+	return b.DBManager
+}
+
+
+func (b *BotClient) SetPrefixes(prefixes []string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.Prefixes = prefixes
+	b.Logger.Info("Prefixes updated: %v", prefixes)
+}
+
+
+func (b *BotClient) GetPrefixes() []string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.Prefixes
+}
+
+
 func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 	owners := make(map[string]bool)
 	for _, owner := range config.Owners {
 		owners[owner] = true
+	}
+
+	
+	prefixes := config.Prefixes
+	if len(prefixes) == 0 {
+		prefixes = []string{"."}
 	}
 
 	botClient := &BotClient{
@@ -75,6 +104,8 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		Owners:                owners,
 		SelfMode:              config.SelfMode,
 		JadibotSessionManager: config.JadibotSessionManager,
+		DBManager:             config.DBManager,
+		Prefixes:              prefixes,
 	}
 
 
@@ -253,6 +284,29 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	isOwner := b.isOwner(evt.Info.Sender)
 
 
+	if b.DBManager != nil && !isOwner {
+
+		if evt.Info.IsGroup {
+			isGroupBanned, err := b.DBManager.IsBanned(evt.Info.Chat.String(), "group")
+			if err != nil {
+				b.Logger.Warning("Failed to check group ban status: %v", err)
+			} else if isGroupBanned {
+				b.Logger.Debug("Ignoring command from banned group: %s", evt.Info.Chat.String())
+				return
+			}
+		}
+
+
+		isUserBanned, err := b.DBManager.IsBanned(evt.Info.Sender.String(), "user")
+		if err != nil {
+			b.Logger.Warning("Failed to check user ban status: %v", err)
+		} else if isUserBanned {
+			b.Logger.Debug("Ignoring command from banned user: %s", evt.Info.Sender.String())
+			return
+		}
+	}
+
+
 	if strings.HasPrefix(msg, "$") && isOwner {
 		args := owner.ParseExecCommand(msg)
 		if len(args) > 0 {
@@ -387,32 +441,58 @@ func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool) (string, []s
 
 	if isOwner {
 
-		if strings.HasPrefix(msg, ".") {
+		b.mu.RLock()
+		prefixes := b.Prefixes
+		b.mu.RUnlock()
 
-			msg = strings.TrimPrefix(msg, ".")
 
-
-			parts := strings.Fields(msg)
-			if len(parts) == 0 {
-				return "", nil
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(msg, prefix) {
+				msg = strings.TrimPrefix(msg, prefix)
+				parts := strings.Fields(msg)
+				if len(parts) == 0 {
+					return "", nil
+				}
+				cmd := strings.ToLower(parts[0])
+				var args []string
+				if len(parts) > 1 {
+					args = parts[1:]
+				}
+				return cmd, args
 			}
+		}
 
-			cmd := strings.ToLower(parts[0])
-			var args []string
-			if len(parts) > 1 {
-				args = parts[1:]
-			}
-			return cmd, args
-		} else if strings.HasPrefix(msg, "$") {
 
+		if strings.HasPrefix(msg, "$") {
 			return "", nil
-		} else {
+		}
 
+
+		parts := strings.Fields(msg)
+		if len(parts) == 0 {
+			return "", nil
+		}
+		cmd := strings.ToLower(parts[0])
+		var args []string
+		if len(parts) > 1 {
+			args = parts[1:]
+		}
+		return cmd, args
+	}
+
+
+	b.mu.RLock()
+	prefixes := b.Prefixes
+	b.mu.RUnlock()
+
+
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(msg, prefix) {
+			msg = strings.TrimPrefix(msg, prefix)
 			parts := strings.Fields(msg)
 			if len(parts) == 0 {
 				return "", nil
 			}
-
 			cmd := strings.ToLower(parts[0])
 			var args []string
 			if len(parts) > 1 {
@@ -422,28 +502,7 @@ func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool) (string, []s
 		}
 	}
 
-
-	prefix := "."
-	if !strings.HasPrefix(msg, prefix) {
-		return "", nil
-	}
-
-
-	msg = strings.TrimPrefix(msg, prefix)
-
-
-	parts := strings.Fields(msg)
-	if len(parts) == 0 {
-		return "", nil
-	}
-
-	cmd := strings.ToLower(parts[0])
-	var args []string
-	if len(parts) > 1 {
-		args = parts[1:]
-	}
-
-	return cmd, args
+	return "", nil
 }
 
 

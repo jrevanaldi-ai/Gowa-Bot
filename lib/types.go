@@ -14,6 +14,9 @@ type BotClientInterface interface {
 	GetSelfMode() bool
 	EventHandler(evt any)
 	SetClient(client *gowa.Client)
+	GetDBManager() interface{}
+	SetPrefixes(prefixes []string)
+	GetPrefixes() []string
 }
 
 

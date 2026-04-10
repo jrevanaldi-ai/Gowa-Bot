@@ -98,7 +98,7 @@ func SpotifyHandler(ctx *lib.CommandContext) error {
 
 func fetchSpotifyAPI(apiURL string) (*SpotifyResponse, error) {
 	client := &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 90 * time.Second,
 	}
 
 	req, err := http.NewRequest("GET", apiURL, nil)
@@ -111,13 +111,13 @@ func fetchSpotifyAPI(apiURL string) (*SpotifyResponse, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch API: %w", err)
+		return nil, fmt.Errorf("failed to fetch body: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
+		return nil, fmt.Errorf("failed to read body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -137,7 +137,25 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 	result := data.Result
 
 
-	audioData, err := downloadFileFast(result.DownloadLink)
+	downloadURL := result.RawLink
+	if downloadURL == "" {
+		downloadURL = result.DownloadLink
+	}
+
+
+	sendMsg := fmt.Sprintf(
+		"⏳ *Downloading audio...*\n\n"+
+			"┌─⦿ *Info*\n"+
+			"│ • Title: %s\n"+
+			"│ • Artist: %s\n"+
+			"└──────────────",
+		result.Title,
+		result.Artist,
+	)
+	_, _ = ctx.SendMessage(helper.CreateSimpleReply(sendMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+
+
+	audioData, err := downloadFileFast(downloadURL)
 	if err != nil {
 		errorMsg := "❌ *Gagal download audio!*\n\n" +
 			"┌─⦿ *Error*\n" +

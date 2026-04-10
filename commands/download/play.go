@@ -250,7 +250,7 @@ func parseUint(s string) uint32 {
 
 func downloadFileFast(url string) ([]byte, error) {
 	client := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 120 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return nil
 		},
@@ -264,6 +264,7 @@ func downloadFileFast(url string) ([]byte, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 	req.Header.Set("Accept", "audio/*,*/*;q=0.9")
 
+	startTime := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download: %w", err)
@@ -274,10 +275,14 @@ func downloadFileFast(url string) ([]byte, error) {
 		return nil, fmt.Errorf("download failed with status %d", resp.StatusCode)
 	}
 
+
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read body: %w", err)
 	}
+
+	elapsed := time.Since(startTime)
+	_ = elapsed
 
 	return data, nil
 }

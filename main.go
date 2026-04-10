@@ -64,10 +64,11 @@ func main() {
 	clientFactory := func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface {
 		botClient := client.NewBotClient(registry, &client.BotConfig{
 			Owners:      owners,
-			Prefix:      ".",
+			Prefixes:    []string{"."},
 			MaxWorkers:  10,
 			EnableCache: true,
 			SelfMode:    false,
+			DBManager:   dbManager,
 		})
 		botClient.SetClient(gowaClient)
 		return botClient
@@ -94,11 +95,12 @@ func main() {
 
 	botClient := client.NewBotClient(registry, &client.BotConfig{
 		Owners:                getOwnerNumbers(),
-		Prefix:                ".",
+		Prefixes:              []string{"."},
 		MaxWorkers:            10,
 		EnableCache:           true,
 		SelfMode:              *selfMode,
 		JadibotSessionManager: jadibotSessionManager,
+		DBManager:             dbManager,
 	})
 
 
@@ -162,6 +164,13 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(owner.InfoserverMetadata, owner.InfoserverHandler)
 
 	registry.Register(owner.ReactMetadata, owner.ReactHandler)
+
+	registry.Register(owner.BangroupMetadata, owner.BangroupHandler)
+	registry.Register(owner.UnbangroupMetadata, owner.UnbangroupHandler)
+	registry.Register(owner.BanuserMetadata, owner.BanuserHandler)
+	registry.Register(owner.UnbanuserMetadata, owner.UnbanuserHandler)
+
+	registry.Register(owner.SetprefixMetadata, owner.SetprefixHandler)
 
 	registry.Register(jadibot.JadibotMetadata, jadibot.JadibotHandler)
 	registry.Register(jadibot.ListJadibotMetadata, jadibot.ListJadibotHandler)
