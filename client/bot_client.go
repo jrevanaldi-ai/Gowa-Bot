@@ -20,23 +20,25 @@ import (
 
 // BotClient adalah wrapper untuk gowa.Client dengan fitur bot
 type BotClient struct {
-	Client          *gowa.Client
-	Registry        *lib.CommandRegistry
-	Logger          *helper.Logger
-	Cache           *helper.Cache
-	EphemeralHelper *helper.EphemeralHelper
-	Owners          map[string]bool
-	SelfMode        bool // Jika true, bot bisa merespon pesan dari diri sendiri
-	mu              sync.RWMutex
+	Client                *gowa.Client
+	Registry              *lib.CommandRegistry
+	Logger                *helper.Logger
+	Cache                 *helper.Cache
+	EphemeralHelper       *helper.EphemeralHelper
+	JadibotSessionManager *helper.JadibotSessionManager
+	Owners                map[string]bool
+	SelfMode              bool // Jika true, bot bisa merespon pesan dari diri sendiri
+	mu                    sync.RWMutex
 }
 
 // BotConfig adalah konfigurasi untuk bot
 type BotConfig struct {
-	Owners       []string
-	Prefix       string
-	MaxWorkers   int
-	EnableCache  bool
-	SelfMode     bool // Jika true, bot bisa merespon pesan dari diri sendiri
+	Owners                []string
+	Prefix                string
+	MaxWorkers            int
+	EnableCache           bool
+	SelfMode              bool // Jika true, bot bisa merespon pesan dari diri sendiri
+	JadibotSessionManager *helper.JadibotSessionManager
 }
 
 // SetSelfMode mengatur self mode
@@ -67,11 +69,12 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 	}
 
 	botClient := &BotClient{
-		Registry: registry,
-		Logger:   helper.NewLogger("BotClient"),
-		Cache:    helper.NewCache(),
-		Owners:   owners,
-		SelfMode: config.SelfMode,
+		Registry:              registry,
+		Logger:                helper.NewLogger("BotClient"),
+		Cache:                 helper.NewCache(),
+		Owners:                owners,
+		SelfMode:              config.SelfMode,
+		JadibotSessionManager: config.JadibotSessionManager,
 	}
 
 	// Init EphemeralHelper
@@ -296,17 +299,18 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 
 	// Buat command context
 	cmdCtx := &lib.CommandContext{
-		Ctx:         context.WithValue(ctx, "registry", b.Registry),
-		Client:      b.Client,
-		BotClient:   b, // Set BotClient reference
-		Sender:      evt.Info.Sender,
-		Chat:        evt.Info.Chat,
-		PushName:    evt.Info.PushName,
-		IsGroup:     evt.Info.IsGroup,
-		IsOwner:     isOwner,
-		Message:     msg,
-		Args:        args,
-		MessageID:   evt.Info.ID,
+		Ctx:                     context.WithValue(ctx, "registry", b.Registry),
+		Client:                  b.Client,
+		BotClient:               b, // Set BotClient reference
+		JadibotSessionManager:   b.JadibotSessionManager,
+		Sender:                  evt.Info.Sender,
+		Chat:                    evt.Info.Chat,
+		PushName:                evt.Info.PushName,
+		IsGroup:                 evt.Info.IsGroup,
+		IsOwner:                 isOwner,
+		Message:                 msg,
+		Args:                    args,
+		MessageID:               evt.Info.ID,
 		EphemeralWrapper: func(ctx context.Context, jid types.JID, message *waE2E.Message) (*waE2E.Message, error) {
 			if b.EphemeralHelper != nil {
 				return b.EphemeralHelper.WrapMessageWithEphemeral(ctx, jid, message)
@@ -346,16 +350,18 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, args []string) {
 	// Buat command context
 	cmdCtx := &lib.CommandContext{
-		Ctx:         context.WithValue(ctx, "registry", b.Registry),
-		Client:      b.Client,
-		Sender:      evt.Info.Sender,
-		Chat:        evt.Info.Chat,
-		PushName:    evt.Info.PushName,
-		IsGroup:     evt.Info.IsGroup,
-		IsOwner:     true,
-		Message:     evt.Message.GetConversation(),
-		Args:        args,
-		MessageID:   evt.Info.ID,
+		Ctx:                     context.WithValue(ctx, "registry", b.Registry),
+		Client:                  b.Client,
+		BotClient:               b,
+		JadibotSessionManager:   b.JadibotSessionManager,
+		Sender:                  evt.Info.Sender,
+		Chat:                    evt.Info.Chat,
+		PushName:                evt.Info.PushName,
+		IsGroup:                 evt.Info.IsGroup,
+		IsOwner:                 true,
+		Message:                 evt.Message.GetConversation(),
+		Args:                    args,
+		MessageID:               evt.Info.ID,
 		EphemeralWrapper: func(ctx context.Context, jid types.JID, message *waE2E.Message) (*waE2E.Message, error) {
 			if b.EphemeralHelper != nil {
 				return b.EphemeralHelper.WrapMessageWithEphemeral(ctx, jid, message)

@@ -12,6 +12,34 @@ import (
 type BotClientInterface interface {
 	SetSelfMode(mode bool)
 	GetSelfMode() bool
+	EventHandler(evt any)
+	SetClient(client *gowa.Client)
+}
+
+// JadibotSessionManagerInterface adalah interface untuk JadibotSessionManager
+type JadibotSessionManagerInterface interface {
+	CreateJadibot(ctx context.Context, ownerJID string, phoneNumber string) (string, error)
+	StartJadibot(ctx context.Context, jadibotID string, phoneNumber string) (string, error)
+	StopJadibot(jadibotID string) error
+	PauseJadibot(jadibotID string) error
+	ResumeJadibot(ctx context.Context, jadibotID string) error
+	GetJadibotInfo(jadibotID string) (*JadibotInfo, error)
+	GetJadibotByOwner(ownerJID string) ([]JadibotInfo, error)
+	DeleteJadibot(jadibotID string) error
+	IsRunning(jadibotID string) bool
+	GetActiveBotsCount() int
+}
+
+// JadibotInfo adalah informasi jadibot (mirip dengan helper.JadibotInfo)
+type JadibotInfo struct {
+	ID           string
+	OwnerJID     string
+	PhoneNumber  string
+	SessionPath  string
+	Status       string
+	CreatedAt    interface{}
+	StartedAt    interface{}
+	LastActiveAt interface{}
 }
 
 // CommandMetadata adalah metadata untuk setiap fitur/command
@@ -27,18 +55,19 @@ type CommandMetadata struct {
 
 // CommandContext adalah context yang diteruskan ke setiap command handler
 type CommandContext struct {
-	Ctx              context.Context
-	Client           *gowa.Client
-	BotClient        BotClientInterface // Reference ke BotClient untuk fitur advanced
-	Sender           types.JID
-	Chat             types.JID
-	PushName         string
-	IsGroup          bool
-	IsOwner          bool
-	Message          string
-	Args             []string
-	MessageID        types.MessageID // ID pesan yang direply
-	EphemeralWrapper func(ctx context.Context, jid types.JID, msg *waE2E.Message) (*waE2E.Message, error)
+	Ctx                     context.Context
+	Client                  *gowa.Client
+	BotClient               BotClientInterface          // Reference ke BotClient untuk fitur advanced
+	JadibotSessionManager   JadibotSessionManagerInterface // Reference ke JadibotSessionManager
+	Sender                  types.JID
+	Chat                    types.JID
+	PushName                string
+	IsGroup                 bool
+	IsOwner                 bool
+	Message                 string
+	Args                    []string
+	MessageID               types.MessageID // ID pesan yang direply
+	EphemeralWrapper        func(ctx context.Context, jid types.JID, msg *waE2E.Message) (*waE2E.Message, error)
 }
 
 // SendMessage mengirim pesan dengan ephemeral wrapper jika tersedia

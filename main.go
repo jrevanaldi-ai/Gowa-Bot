@@ -17,6 +17,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/client"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/debug"
 	general "github.com/jrevanaldi-ai/gowa-bot/commands/general"
+	"github.com/jrevanaldi-ai/gowa-bot/commands/jadibot"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/owner"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/utility"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
@@ -47,13 +48,56 @@ func main() {
 	// Register commands
 	registerCommands(registry)
 
+	// Buat database manager untuk jadibot
+	dbManager, err := helper.NewDatabaseManager(*dbPath)
+	if err != nil {
+		logger.Error("Failed to create database manager: %v", err)
+		return
+	}
+	defer dbManager.Close()
+
+	// Buat jadibot session manager
+	gowaLog := &formatLogger{logger: logger}
+	
+	// Client factory untuk buat BotClient jadibot
+	clientFactory := func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface {
+		botClient := client.NewBotClient(registry, &client.BotConfig{
+			Owners:      owners,
+			Prefix:      ".",
+			MaxWorkers:  10,
+			EnableCache: true,
+			SelfMode:    false,
+		})
+		botClient.SetClient(gowaClient)
+		return botClient
+	}
+	
+	jadibotSessionManager := helper.NewJadibotSessionManager(dbManager, registry, gowaLog, logger, clientFactory)
+	jadibotSessionManager.SetOwnerNumbers(getOwnerNumbers())
+
+	// Resume semua jadibot yang aktif saat startup
+	logger.Info("Resuming active jadibots...")
+	activeJadibots, err := dbManager.GetActiveJadibot()
+	if err != nil {
+		logger.Warning("Failed to get active jadibots: %v", err)
+	} else {
+		for _, jadibot := range activeJadibots {
+			logger.Info("Resuming jadibot: %s", jadibot.ID)
+			_, err := jadibotSessionManager.StartJadibot(context.Background(), jadibot.ID, jadibot.PhoneNumber)
+			if err != nil {
+				logger.Warning("Failed to resume jadibot %s: %v", jadibot.ID, err)
+			}
+		}
+	}
+
 	// Buat bot client
 	botClient := client.NewBotClient(registry, &client.BotConfig{
-		Owners:      getOwnerNumbers(),
-		Prefix:      ".",
-		MaxWorkers:  10,
-		EnableCache: true,
-		SelfMode:    *selfMode,
+		Owners:                getOwnerNumbers(),
+		Prefix:                ".",
+		MaxWorkers:            10,
+		EnableCache:           true,
+		SelfMode:              *selfMode,
+		JadibotSessionManager: jadibotSessionManager,
 	})
 
 	// Connect to WhatsApp
@@ -78,6 +122,11 @@ func main() {
 	<-sigChan
 
 	logger.Info("Shutting down...")
+
+	// Stop semua jadibot
+	logger.Info("Stopping all jadibots...")
+	jadibotSessionManager.StopAll()
+
 	cancel()
 	cli.Disconnect()
 
@@ -92,9 +141,6 @@ func registerCommands(registry *lib.CommandRegistry) {
 
 	// Register fetch command
 	registry.Register(utility.FetchMetadata, utility.FetchHandler)
-
-	// Register youtube command
-	registry.Register(utility.YoutubeMetadata, utility.YoutubeHandler)
 
 	// Register menu command
 	registry.Register(general.MenuMetadata, general.MenuHandler)
@@ -113,6 +159,14 @@ func registerCommands(registry *lib.CommandRegistry) {
 
 	// Register infoserver command (owner only)
 	registry.Register(owner.InfoserverMetadata, owner.InfoserverHandler)
+
+	// Register jadibot commands
+	registry.Register(jadibot.JadibotMetadata, jadibot.JadibotHandler)
+	registry.Register(jadibot.ListJadibotMetadata, jadibot.ListJadibotHandler)
+	registry.Register(jadibot.StopJadibotMetadata, jadibot.StopJadibotHandler)
+	registry.Register(jadibot.PauseJadibotMetadata, jadibot.PauseJadibotHandler)
+	registry.Register(jadibot.ResumeJadibotMetadata, jadibot.ResumeJadibotHandler)
+	registry.Register(jadibot.RemoveJadibotMetadata, jadibot.RemoveJadibotHandler)
 }
 
 // getOwnerNumbers mendapatkan daftar nomor owner dari environment variable

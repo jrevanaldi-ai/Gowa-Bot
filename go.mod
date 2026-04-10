@@ -1,6 +1,6 @@
 module github.com/jrevanaldi-ai/gowa-bot
 
-go 1.26
+go 1.25.4
 
 replace github.com/jrevanaldi-ai/gowa => ./gowa-lib
 
