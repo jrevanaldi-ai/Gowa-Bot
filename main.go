@@ -161,6 +161,7 @@ func registerCommands(registry *lib.CommandRegistry) {
 
 	registry.Register(owner.InfoserverMetadata, owner.InfoserverHandler)
 
+	registry.Register(owner.ReactMetadata, owner.ReactHandler)
 
 	registry.Register(jadibot.JadibotMetadata, jadibot.JadibotHandler)
 	registry.Register(jadibot.ListJadibotMetadata, jadibot.ListJadibotHandler)
