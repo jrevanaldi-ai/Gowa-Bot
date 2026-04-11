@@ -35,15 +35,98 @@ type CreatePaymentRequest struct {
 
 
 type CreatePaymentResponse struct {
-	Status      bool   `json:"status"`
-	Message     string `json:"message"`
-	RefNo       string `json:"ref_no"`
-	QRString    string `json:"qr_string"`
-	QRImageURL  string `json:"qr_image"`
-	Amount      int    `json:"amount"`
-	ProductName string `json:"product_name"`
-	ExpiresAt   string `json:"expires_at"`
-	Type        string `json:"type"`
+	Status       json.RawMessage `json:"status"`
+	StatusStr    string          `json:"-"`
+	Message      string          `json:"message"`
+	RefNo        string          `json:"ref_no"`
+	QRString     string          `json:"qr_string"`
+	QRContent   string          `json:"qr_content"`
+	QRImageURL   string          `json:"qr_image"`
+	QRURL        string          `json:"qr_url"`
+	PaymentLink  string          `json:"payment_link"`
+	Amount       json.Number     `json:"amount"`
+	ProductName  string          `json:"product_name"`
+	ExpiresAt    string          `json:"expires_at"`
+	Type         string          `json:"type"`
+}
+
+
+func (r *CreatePaymentResponse) UnmarshalJSON(data []byte) error {
+
+	type Alias CreatePaymentResponse
+	aux := &struct {
+		Status json.RawMessage `json:"status"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	r.Status = aux.Status
+
+	if r.Status != nil {
+		s := strings.Trim(string(r.Status), "\"")
+		r.StatusStr = strings.ToLower(s)
+	}
+
+	return nil
+}
+
+
+func (r *CreatePaymentResponse) GetQRString() string {
+	
+	if r.QRContent != "" {
+		return r.QRContent
+	}
+	if r.QRString != "" {
+		return r.QRString
+	}
+	return ""
+}
+
+
+func (r *CreatePaymentResponse) GetQRImageURL() string {
+	
+	if r.QRURL != "" {
+		return r.QRURL
+	}
+	if r.QRImageURL != "" {
+		return r.QRImageURL
+	}
+	return ""
+}
+
+
+func (r *CreatePaymentResponse) IsSuccess() bool {
+
+	if r.StatusStr != "" {
+		return r.StatusStr == "success" || r.StatusStr == "true" || r.StatusStr == "1" || r.StatusStr == "ok"
+	}
+
+	statusStr := string(r.Status)
+
+	if statusStr == "" || statusStr == "null" {
+		return false
+	}
+
+	s := strings.ToLower(strings.Trim(statusStr, "\""))
+	return s == "success" || s == "true" || s == "1" || s == "ok"
+}
+
+
+func (r *CreatePaymentResponse) GetAmountInt() int {
+	if r.Amount == "" {
+		return 0
+	}
+	
+	amount, err := r.Amount.Int64()
+	if err != nil {
+		return 0
+	}
+	return int(amount)
 }
 
 
@@ -134,11 +217,12 @@ func (c *MustikaPayClient) CreateQRIS(req CreatePaymentRequest) (*CreatePaymentR
 	}
 
 
-	if !apiResp.Status {
+	if !apiResp.IsSuccess() {
 		return nil, fmt.Errorf("API error: %s", apiResp.Message)
 	}
 
-	c.Logger.Info("QRIS created: %s (Amount: %d)", apiResp.RefNo, apiResp.Amount)
+	amount := apiResp.GetAmountInt()
+	c.Logger.Info("QRIS created: %s (Amount: %d)", apiResp.RefNo, amount)
 
 	return &apiResp, nil
 }
@@ -199,10 +283,10 @@ func (c *MustikaPayClient) CheckPaymentStatus(refNo string) (*CheckPaymentRespon
 
 func (c *MustikaPayClient) WaitForPayment(refNo string, interval time.Duration, maxAttempts int) (*CheckPaymentResponse, error) {
 	if interval == 0 {
-		interval = 10 * time.Second
+		interval = 5 * time.Second
 	}
 	if maxAttempts == 0 {
-		maxAttempts = 60
+		maxAttempts = 24
 	}
 
 	c.Logger.Info("Start polling payment %s (interval: %v, max attempts: %d)", refNo, interval, maxAttempts)

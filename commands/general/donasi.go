@@ -1,13 +1,17 @@
 package general
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 	"time"
 
 	"google.golang.org/protobuf/proto"
 
 	"github.com/google/uuid"
+	"github.com/jrevanaldi-ai/gowa"
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
@@ -37,9 +41,9 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 			"• `.donasi 50000` - Donasi Rp 50.000\n" +
 			"• `.donasi 100000` - Donasi Rp 100.000\n\n" +
 			"*💡 Info:*\n" +
-			"• Minimal donasi: Rp 1.000\n" +
+			"• Minimal donasi: Rp 10\n" +
 			"• Maksimal donasi: Rp 10.000.000\n" +
-			"• QRIS berlaku selama 15 menit\n" +
+			"• QRIS berlaku selama 2 menit\n" +
 			"• Biaya MDR: 0.7%\n\n" +
 			"*🔒 Pembayaran aman via MustikaPay*"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
@@ -60,11 +64,11 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	if amount < 1000 {
-		message := "❌ *Minimal donasi: Rp 1.000!*\n\n" +
+	if amount < 10 {
+		message := "❌ *Minimal donasi: Rp 10!*\n\n" +
 			"┌─⦿ *Info*\n" +
 			"│ • Nominal terlalu kecil\n" +
-			"│ • Minimal: Rp 1.000\n" +
+			"│ • Minimal: Rp 10\n" +
 			"└──────────────"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
@@ -113,6 +117,7 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 	logger := helper.NewLogger("Donasi")
 	mustikaClient := helper.NewMustikaPayClient(apiKey, logger)
 
+	logger.Info("Creating QRIS payment - Amount: %d, Customer: %s", amount, ctx.PushName)
 
 	paymentReq := helper.CreatePaymentRequest{
 		Amount:       amount,
@@ -122,16 +127,20 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 
 	paymentResp, err := mustikaClient.CreateQRIS(paymentReq)
 	if err != nil {
+		logger.Error("Failed to create QRIS: %v", err)
 		errorMsg := fmt.Sprintf("❌ *Gagal membuat QRIS!*\n\n"+
 			"┌─⦿ *Error*\n"+
 			"│ • %s\n"+
 			"└──────────────\n\n"+
 			"*📝 Solusi:*\n"+
 			"• Coba lagi dalam beberapa saat\n"+
-			"• Hubungi admin jika masalah berlanjut", err.Error())
+			"• Hubungi admin jika masalah berlanjut\n"+
+			"• Pastikan koneksi server stabil", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
+
+	logger.Info("QRIS created successfully - RefNo: %s, QR URL: %s", paymentResp.RefNo, paymentResp.GetQRImageURL())
 
 
 	donationID := uuid.New().String()
@@ -141,8 +150,8 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 		UserJID:      ctx.Sender.String(),
 		UserName:     ctx.PushName,
 		Amount:       amount,
-		QRString:     paymentResp.QRString,
-		QRImageURL:   paymentResp.QRImageURL,
+		QRString:     paymentResp.GetQRString(),
+		QRImageURL:   paymentResp.GetQRImageURL(),
 		Status:       "pending",
 		ProductName:  paymentResp.ProductName,
 	}
@@ -164,7 +173,7 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 			"1. 📸 Scan QR Code di atas\n"+
 			"2. 💰 Masukkan nominal: Rp %s\n"+
 			"3. ✅ Konfirmasi pembayaran\n\n"+
-			"⏰ *Batas Waktu:* 15 menit\n"+
+			"⏰ *Batas Waktu:* 2 menit\n"+
 			"🔍 *Cek Status:* `.cekdonasi %s`\n\n"+
 			"_Bot akan otomatis mendeteksi pembayaran Anda!_",
 		paymentResp.RefNo,
@@ -175,11 +184,84 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 	)
 
 
+	qrImageURL := paymentResp.GetQRImageURL()
+	if qrImageURL == "" {
+
+		errorMsg := "❌ *QR Image URL tidak tersedia!*\n\n" +
+			"┌─⦿ *Info*\n" +
+			"│ • QR URL kosong dari API\n" +
+			"│ • Coba lagi dalam beberapa saat\n" +
+			"└──────────────"
+		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return nil
+	}
+
+
+	logger.Info("Downloading QR image from: %s", qrImageURL)
+	httpClient := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+	resp, err := httpClient.Get(qrImageURL)
+	if err != nil {
+		logger.Error("Failed to download QR image: %v", err)
+		errorMsg := fmt.Sprintf("❌ *Gagal download QR Image!*\n\n"+
+			"┌─⦿ *Error*\n"+
+			"│ • %s\n"+
+			"└──────────────", err.Error())
+		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Error("Failed to download QR image: HTTP %d", resp.StatusCode)
+		errorMsg := fmt.Sprintf("❌ *Gagal download QR Image (HTTP %d)!*\n\n"+
+			"┌─⦿ *Info*\n"+
+			"│ • Server API error\n"+
+			"└──────────────", resp.StatusCode)
+		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return nil
+	}
+
+	qrImageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("Failed to read QR image data: %v", err)
+		errorMsg := fmt.Sprintf("❌ *Gagal membaca QR Image!*\n\n"+
+			"┌─⦿ *Error*\n"+
+			"│ • %s\n"+
+			"└──────────────", err.Error())
+		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return nil
+	}
+
+	logger.Info("QR image downloaded successfully (%d bytes)", len(qrImageData))
+
+
+	uploadResp, err := ctx.Client.Upload(context.Background(), qrImageData, gowa.MediaImage)
+	if err != nil {
+		logger.Error("Failed to upload QR image: %v", err)
+		errorMsg := fmt.Sprintf("❌ *Gagal upload QR Image!*\n\n"+
+			"┌─⦿ *Error*\n"+
+			"│ • %s\n"+
+			"└──────────────", err.Error())
+		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return nil
+	}
+
+	logger.Info("QR image uploaded successfully - URL: %s", uploadResp.URL)
+
+
 	qrImageMsg := &waE2E.Message{
 		ImageMessage: &waE2E.ImageMessage{
-			URL:           proto.String(paymentResp.QRImageURL),
+			URL:           proto.String(uploadResp.URL),
+			DirectPath:    proto.String(uploadResp.DirectPath),
 			Mimetype:      proto.String("image/png"),
 			Caption:       proto.String(caption),
+			FileSHA256:    uploadResp.FileSHA256,
+			FileEncSHA256: uploadResp.FileEncSHA256,
+			FileLength:    proto.Uint64(uploadResp.FileLength),
+			MediaKey:      uploadResp.MediaKey,
+			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
 			ContextInfo: &waE2E.ContextInfo{
 				StanzaID:    proto.String(ctx.MessageID),
 				Participant: proto.String(ctx.Sender.String()),
@@ -204,8 +286,8 @@ func monitorDonation(ctx *lib.CommandContext, client *helper.MustikaPayClient, d
 	logger.Info("Start monitoring donation: %s", refNo)
 
 
-	maxAttempts := 90
-	interval := 10 * time.Second
+	maxAttempts := 24
+	interval := 5 * time.Second
 
 	for i := 0; i < maxAttempts; i++ {
 		time.Sleep(interval)
@@ -281,7 +363,7 @@ func sendExpiredNotification(ctx *lib.CommandContext, refNo string, amount int) 
 			"└──────────────\n\n"+
 			"*📝 Solusi:*\n"+
 			"• Buat QRIS baru dengan `.donasi %d`\n"+
-			"• Pastikan pembayaran dilakukan dalam 15 menit",
+			"• Pastikan pembayaran dilakukan dalam 2 menit",
 		refNo,
 		helper.FormatAmount(amount),
 		amount,

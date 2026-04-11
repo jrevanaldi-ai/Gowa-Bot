@@ -76,15 +76,15 @@ type CreatePaymentRequest struct {
 
 // Create Payment Response
 type CreatePaymentResponse struct {
-    Status      bool   `json:"status"`
-    Message     string `json:"message"`
-    RefNo       string `json:"ref_no"`
-    QRString    string `json:"qr_string"`
-    QRImageURL  string `json:"qr_image"`
-    Amount      int    `json:"amount"`
-    ProductName string `json:"product_name"`
-    ExpiresAt   string `json:"expires_at"`
-    Type        string `json:"type"`
+    Status      json.RawMessage `json:"status"`  // Bisa string atau bool
+    Message     string          `json:"message"`
+    RefNo       string          `json:"ref_no"`
+    QRString    string          `json:"qr_string"`
+    QRImageURL  string          `json:"qr_image"`
+    Amount      string          `json:"amount"`
+    ProductName string          `json:"product_name"`
+    ExpiresAt   string          `json:"expires_at"`
+    Type        string          `json:"type"`
 }
 
 // Check Payment Response
