@@ -22,6 +22,34 @@ const (
 type JadibotInfo = lib.JadibotInfo
 
 
+type DonationStatus string
+
+const (
+	DonationPending  DonationStatus = "pending"
+	DonationSuccess  DonationStatus = "success"
+	DonationExpired   DonationStatus = "expired"
+	DonationFailed    DonationStatus = "failed"
+)
+
+
+type DonationInfo struct {
+	ID            string
+	RefNo         string
+	UserJID       string
+	UserName      string
+	Amount        int
+	QRString      string
+	QRImageURL    string
+	Status        string
+	PaymentType   string
+	Issuer        string
+	Payor         string
+	ProductName   string
+	CreatedAt     interface{}
+	UpdatedAt     interface{}
+}
+
+
 type DatabaseManager struct {
 	DB *sql.DB
 }
@@ -71,10 +99,30 @@ func (m *DatabaseManager) createTables() error {
 		banned_by TEXT NOT NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS donations (
+		id TEXT PRIMARY KEY,
+		ref_no TEXT NOT NULL UNIQUE,
+		user_jid TEXT NOT NULL,
+		user_name TEXT,
+		amount INTEGER NOT NULL,
+		qr_string TEXT,
+		qr_image_url TEXT,
+		status TEXT NOT NULL DEFAULT 'pending',
+		payment_type TEXT,
+		issuer TEXT,
+		payor TEXT,
+		product_name TEXT,
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME
+	);
+
 	CREATE INDEX IF NOT EXISTS idx_jadibots_owner ON jadibots(owner_jid);
 	CREATE INDEX IF NOT EXISTS idx_jadibots_status ON jadibots(status);
 	CREATE INDEX IF NOT EXISTS idx_banned_type ON banned(type);
 	CREATE INDEX IF NOT EXISTS idx_banned_jid ON banned(jid);
+	CREATE INDEX IF NOT EXISTS idx_donations_user ON donations(user_jid);
+	CREATE INDEX IF NOT EXISTS idx_donations_ref ON donations(ref_no);
+	CREATE INDEX IF NOT EXISTS idx_donations_status ON donations(status);
 	`
 
 	_, err := m.DB.Exec(query)
@@ -378,4 +426,198 @@ func (m *DatabaseManager) GetBannedCount(banType string) (int, error) {
 	}
 
 	return count, nil
+}
+
+
+func (m *DatabaseManager) CreateDonation(info DonationInfo) error {
+	query := `
+	INSERT INTO donations (id, ref_no, user_jid, user_name, amount, qr_string, qr_image_url, status, product_name, created_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+	`
+
+	_, err := m.DB.Exec(query, info.ID, info.RefNo, info.UserJID, info.UserName, info.Amount, info.QRString, info.QRImageURL, info.ProductName, time.Now())
+	return err
+}
+
+
+func (m *DatabaseManager) GetDonation(refNo string) (*DonationInfo, error) {
+	query := `
+	SELECT id, ref_no, user_jid, user_name, amount, qr_string, qr_image_url, status, payment_type, issuer, payor, product_name, created_at, updated_at
+	FROM donations WHERE ref_no = ?
+	`
+
+	var info DonationInfo
+	var createdAt, updatedAt sql.NullTime
+	var qrString, qrImageURL, paymentType, issuer, payor, userName sql.NullString
+
+	err := m.DB.QueryRow(query, refNo).Scan(
+		&info.ID, &info.RefNo, &info.UserJID, &userName, &info.Amount,
+		&qrString, &qrImageURL, &info.Status, &paymentType, &issuer, &payor,
+		&info.ProductName, &createdAt, &updatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if userName.Valid {
+		info.UserName = userName.String
+	}
+	if qrString.Valid {
+		info.QRString = qrString.String
+	}
+	if qrImageURL.Valid {
+		info.QRImageURL = qrImageURL.String
+	}
+	if paymentType.Valid {
+		info.PaymentType = paymentType.String
+	}
+	if issuer.Valid {
+		info.Issuer = issuer.String
+	}
+	if payor.Valid {
+		info.Payor = payor.String
+	}
+	if createdAt.Valid {
+		info.CreatedAt = createdAt.Time
+	}
+	if updatedAt.Valid {
+		info.UpdatedAt = updatedAt.Time
+	}
+
+	return &info, nil
+}
+
+
+func (m *DatabaseManager) UpdateDonationStatus(refNo string, status DonationStatus, paymentType, issuer, payor string) error {
+	query := `
+	UPDATE donations
+	SET status = ?,
+	    payment_type = ?,
+	    issuer = ?,
+	    payor = ?,
+	    updated_at = CURRENT_TIMESTAMP
+	WHERE ref_no = ?
+	`
+
+	_, err := m.DB.Exec(query, status, paymentType, issuer, payor, refNo)
+	return err
+}
+
+
+func (m *DatabaseManager) GetUserDonations(userJID string) ([]DonationInfo, error) {
+	query := `
+	SELECT id, ref_no, user_jid, user_name, amount, qr_string, qr_image_url, status, payment_type, issuer, payor, product_name, created_at, updated_at
+	FROM donations WHERE user_jid = ? ORDER BY created_at DESC
+	`
+
+	rows, err := m.DB.Query(query, userJID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var donations []DonationInfo
+	for rows.Next() {
+		var info DonationInfo
+		var createdAt, updatedAt sql.NullTime
+		var qrString, qrImageURL, paymentType, issuer, payor, userName sql.NullString
+
+		err := rows.Scan(
+			&info.ID, &info.RefNo, &info.UserJID, &userName, &info.Amount,
+			&qrString, &qrImageURL, &info.Status, &paymentType, &issuer, &payor,
+			&info.ProductName, &createdAt, &updatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if userName.Valid {
+			info.UserName = userName.String
+		}
+		if qrString.Valid {
+			info.QRString = qrString.String
+		}
+		if qrImageURL.Valid {
+			info.QRImageURL = qrImageURL.String
+		}
+		if paymentType.Valid {
+			info.PaymentType = paymentType.String
+		}
+		if issuer.Valid {
+			info.Issuer = issuer.String
+		}
+		if payor.Valid {
+			info.Payor = payor.String
+		}
+		if createdAt.Valid {
+			info.CreatedAt = createdAt.Time
+		}
+		if updatedAt.Valid {
+			info.UpdatedAt = updatedAt.Time
+		}
+
+		donations = append(donations, info)
+	}
+
+	return donations, nil
+}
+
+
+func (m *DatabaseManager) GetPendingDonations() ([]DonationInfo, error) {
+	query := `
+	SELECT id, ref_no, user_jid, user_name, amount, qr_string, qr_image_url, status, payment_type, issuer, payor, product_name, created_at, updated_at
+	FROM donations WHERE status = 'pending' ORDER BY created_at ASC
+	`
+
+	rows, err := m.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var donations []DonationInfo
+	for rows.Next() {
+		var info DonationInfo
+		var createdAt, updatedAt sql.NullTime
+		var qrString, qrImageURL, paymentType, issuer, payor, userName sql.NullString
+
+		err := rows.Scan(
+			&info.ID, &info.RefNo, &info.UserJID, &userName, &info.Amount,
+			&qrString, &qrImageURL, &info.Status, &paymentType, &issuer, &payor,
+			&info.ProductName, &createdAt, &updatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if userName.Valid {
+			info.UserName = userName.String
+		}
+		if qrString.Valid {
+			info.QRString = qrString.String
+		}
+		if qrImageURL.Valid {
+			info.QRImageURL = qrImageURL.String
+		}
+		if paymentType.Valid {
+			info.PaymentType = paymentType.String
+		}
+		if issuer.Valid {
+			info.Issuer = issuer.String
+		}
+		if payor.Valid {
+			info.Payor = payor.String
+		}
+		if createdAt.Valid {
+			info.CreatedAt = createdAt.Time
+		}
+		if updatedAt.Valid {
+			info.UpdatedAt = updatedAt.Time
+		}
+
+		donations = append(donations, info)
+	}
+
+	return donations, nil
 }

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -31,10 +32,14 @@ var (
 	phone    = flag.String("phone", "", "Nomor telepon untuk pairing (format: 62xxx)")
 	dbPath   = flag.String("db", "gowa-bot.db", "Path ke database file")
 	selfMode = flag.Bool("self", false, "Self mode - bot merespon pesan dari diri sendiri")
+	mustikaPayAPIKey = flag.String("mustika-api-key", "", "MustikaPay API Key untuk pembayaran")
 )
 
 func main() {
 	flag.Parse()
+
+
+	loadEnvFile()
 
 
 	helper.Banner()
@@ -56,6 +61,17 @@ func main() {
 		return
 	}
 	defer dbManager.Close()
+
+
+	if *mustikaPayAPIKey == "" {
+
+		*mustikaPayAPIKey = os.Getenv("GOWA_BOT_MUSTIKA_API_KEY")
+	}
+
+	if *mustikaPayAPIKey != "" {
+		general.SetMustikaPayAPIKey(*mustikaPayAPIKey)
+		logger.Info("MustikaPay payment integration enabled")
+	}
 
 
 	gowaLog := &formatLogger{logger: logger}
@@ -158,6 +174,10 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(general.GetppMetadata, general.GetppHandler)
 
 
+	registry.Register(general.DonasiMetadata, general.DonasiHandler)
+	registry.Register(general.CekDonasiMetadata, general.CekDonasiHandler)
+
+
 	registry.Register(debug.CheckEphemeralMetadata, debug.CheckEphemeralHandler)
 
 
@@ -205,8 +225,9 @@ func registerCommands(registry *lib.CommandRegistry) {
 func getOwnerNumbers() []string {
 	owners := os.Getenv("GOWA_BOT_OWNERS")
 	if owners == "" {
-
-		return []string{"224983875903488"}
+		logger := helper.NewLogger("Main")
+		logger.Warning("GOWA_BOT_OWNERS not set in .env or flags. Bot will have no owners configured.")
+		return []string{}
 	}
 
 
@@ -330,6 +351,50 @@ func trimSpace(s string) string {
 		end--
 	}
 	return s[start:end]
+}
+
+
+func loadEnvFile() {
+
+	file, err := os.Open(".env")
+	if err != nil {
+
+		return
+	}
+	defer file.Close()
+
+
+	buf := make([]byte, 4096)
+	n, _ := file.Read(buf)
+	content := string(buf[:n])
+
+
+	lines := splitString(content, "\n")
+	for _, line := range lines {
+		line = trimSpace(line)
+
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+
+		if strings.HasPrefix(line, "export ") {
+			line = strings.TrimPrefix(line, "export ")
+		}
+
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := trimSpace(parts[0])
+			value := trimSpace(parts[1])
+
+			value = strings.Trim(value, "\"")
+			value = strings.Trim(value, "'")
+
+
+			os.Setenv(key, value)
+		}
+	}
 }
 
 
