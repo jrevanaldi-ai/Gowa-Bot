@@ -57,6 +57,12 @@ type CommandMetadata struct {
 }
 
 
+type ReplyMessageInfo struct {
+	MessageID string
+	Sender    string
+	Message   string
+}
+
 type CommandContext struct {
 	Ctx                     context.Context
 	Client                  *gowa.Client
@@ -71,6 +77,12 @@ type CommandContext struct {
 	Args                    []string
 	MessageID               types.MessageID
 	EphemeralWrapper        func(ctx context.Context, jid types.JID, msg *waE2E.Message) (*waE2E.Message, error)
+	
+	// ReplyMessage berisi informasi tentang pesan yang di-reply (jika ada)
+	ReplyMessage            *ReplyMessageInfo
+	
+	// Mententions berisi daftar JID yang di-tag dalam pesan
+	Mentions                []string
 }
 
 
@@ -164,4 +176,14 @@ func (r *CommandRegistry) GetCommandsByTag(tag string) []*CommandMetadata {
 	}
 
 	return commands
+}
+
+
+func StringToJID(jidStr string) types.JID {
+	jid, err := types.ParseJID(jidStr)
+	if err != nil {
+
+		return types.NewJID(jidStr, types.DefaultUserServer)
+	}
+	return jid
 }

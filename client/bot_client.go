@@ -352,8 +352,33 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	}
 
 
+	var replyMsg *lib.ReplyMessageInfo
+	if evt.Message.ExtendedTextMessage != nil && evt.Message.ExtendedTextMessage.ContextInfo != nil {
+		contextInfo := evt.Message.ExtendedTextMessage.ContextInfo
+		if contextInfo.StanzaID != nil && contextInfo.Participant != nil {
+			replyMsg = &lib.ReplyMessageInfo{
+				MessageID: *contextInfo.StanzaID,
+				Sender:    *contextInfo.Participant,
+				Message:   "",
+			}
+		}
+	}
+
+
+	var mentions []string
+	if evt.Message.ExtendedTextMessage != nil && evt.Message.ExtendedTextMessage.ContextInfo != nil {
+		contextInfo := evt.Message.ExtendedTextMessage.ContextInfo
+		if len(contextInfo.MentionedJID) > 0 {
+			mentions = make([]string, len(contextInfo.MentionedJID))
+			for i, mention := range contextInfo.MentionedJID {
+				mentions[i] = mention
+			}
+		}
+	}
+
+
 	cmdCtx := &lib.CommandContext{
-		Ctx:                     context.WithValue(ctx, "registry", b.Registry),
+		Ctx:                     context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
 		Client:                  b.Client,
 		BotClient:               b,
 		JadibotSessionManager:   b.JadibotSessionManager,
@@ -371,6 +396,8 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 			}
 			return message, nil
 		},
+		ReplyMessage: replyMsg,
+		Mentions:     mentions,
 	}
 
 

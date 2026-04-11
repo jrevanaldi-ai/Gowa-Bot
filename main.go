@@ -146,10 +146,16 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(utility.FetchMetadata, utility.FetchHandler)
 
 
+	registry.Register(utility.ThumbnailMetadata, utility.ThumbnailHandler)
+
+
 	registry.Register(general.MenuMetadata, general.MenuHandler)
 
 
 	registry.Register(general.HelpMetadata, general.HelpHandler)
+
+
+	registry.Register(general.GetppMetadata, general.GetppHandler)
 
 
 	registry.Register(debug.CheckEphemeralMetadata, debug.CheckEphemeralHandler)

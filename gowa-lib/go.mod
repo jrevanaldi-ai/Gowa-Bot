@@ -1,6 +1,6 @@
 module github.com/jrevanaldi-ai/gowa
 
-go 1.25.0
+go 1.26
 
 require (
 	github.com/beeper/argo-go v1.1.2

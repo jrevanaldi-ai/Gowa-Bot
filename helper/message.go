@@ -2,8 +2,10 @@ package helper
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"google.golang.org/protobuf/proto"
 )
 
 
@@ -146,5 +148,25 @@ func BuildReplyMessage(message *waE2E.Message, replyToMsgID string, senderJID st
 	}
 
 	return message
+}
+
+
+func CreateImageReply(url string, directPath string, sha256 []byte, encSha256 []byte, fileLength uint64, mediaKey []byte, replyToMsgID string, senderJID string) *waE2E.Message {
+	return &waE2E.Message{
+		ImageMessage: &waE2E.ImageMessage{
+			URL:           proto.String(url),
+			DirectPath:    proto.String(directPath),
+			Mimetype:      proto.String("image/png"),
+			FileSHA256:    sha256,
+			FileEncSHA256: encSha256,
+			FileLength:    proto.Uint64(fileLength),
+			MediaKey:      mediaKey,
+			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
+			ContextInfo: &waE2E.ContextInfo{
+				StanzaID:    &replyToMsgID,
+				Participant: &senderJID,
+			},
+		},
+	}
 }
 
