@@ -1,5 +1,0 @@
-query humanQuery($id: String!) {
-  human(id: $id) {
-    name
-  }
-}

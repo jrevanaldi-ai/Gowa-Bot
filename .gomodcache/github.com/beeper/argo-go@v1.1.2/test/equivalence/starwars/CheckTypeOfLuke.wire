@@ -1,9 +1,0 @@
-{
- data: {
-   hero: {
-     __typename: STRING<String>
-     name: STRING<String>?
-    }?
-  }?
- errors?: DESC[]?
-}

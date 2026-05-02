@@ -1,6 +1,0 @@
-query HeroNameQuery {
-  mainHero: hero {
-    name
-    story: secretBackstory
-  }
-}

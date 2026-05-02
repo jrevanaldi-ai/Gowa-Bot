@@ -1,5 +1,0 @@
-query FetchLukeAliased {
-  luke: human(id: "1000") {
-    name
-  }
-}

@@ -1,6 +1,0 @@
-query CheckTypeOfLuke {
-  hero(episode: EMPIRE) {
-    __typename
-    name
-  }
-}
