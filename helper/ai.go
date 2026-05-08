@@ -16,18 +16,18 @@ import (
 )
 
 type AIService struct {
-	BaseURL     string
-	APIKey      string
-	Model       string
+	BaseURL      string
+	APIKey       string
+	Model        string
 	SystemPrompt string
-	Client      *http.Client
-	mu          sync.RWMutex
-	// References to bot components for command execution
-	registry    *lib.CommandRegistry
-	dispatcher  *lib.Dispatcher
-	client      *gowa.Client
-	jadibotMgr  lib.JadibotSessionManagerInterface
-	dbManager   interface{}
+	Client       *http.Client
+	mu           sync.RWMutex
+
+	registry   *lib.CommandRegistry
+	dispatcher *lib.Dispatcher
+	client     *gowa.Client
+	jadibotMgr lib.JadibotSessionManagerInterface
+	dbManager  interface{}
 }
 
 type AIMessage struct {
@@ -36,10 +36,10 @@ type AIMessage struct {
 }
 
 type AIRequest struct {
-	Model      string      `json:"model"`
-	MaxTokens  int         `json:"max_tokens"`
-	System     string      `json:"system"`
-	Messages   []AIMessage `json:"messages"`
+	Model     string      `json:"model"`
+	MaxTokens int         `json:"max_tokens"`
+	System    string      `json:"system"`
+	Messages  []AIMessage `json:"messages"`
 }
 
 type AIContent struct {
@@ -48,14 +48,14 @@ type AIContent struct {
 }
 
 type AIResponse struct {
-	ID           string        `json:"id"`
-	Type         string        `json:"type"`
-	Role         string        `json:"role"`
-	Model        string        `json:"model"`
-	Content      []AIContent   `json:"content"`
-	StopReason   string        `json:"stop_reason"`
-	StopSequence string        `json:"stop_sequence"`
-	Usage        AIUsage       `json:"usage"`
+	ID           string      `json:"id"`
+	Type         string      `json:"type"`
+	Role         string      `json:"role"`
+	Model        string      `json:"model"`
+	Content      []AIContent `json:"content"`
+	StopReason   string      `json:"stop_reason"`
+	StopSequence string      `json:"stop_sequence"`
+	Usage        AIUsage     `json:"usage"`
 }
 
 type AIUsage struct {
@@ -102,11 +102,11 @@ func NewAIService(apiKey, baseURL, model, systemPrompt string, registry *lib.Com
 		Client: &http.Client{
 			Timeout: 120 * time.Second,
 		},
-		registry:    registry,
-		dispatcher:  dispatcher,
-		client:      client,
-		jadibotMgr:  jadibotMgr,
-		dbManager:   dbManager,
+		registry:   registry,
+		dispatcher: dispatcher,
+		client:     client,
+		jadibotMgr: jadibotMgr,
+		dbManager:  dbManager,
 	}
 }
 
@@ -193,28 +193,23 @@ func (ai *AIService) Chat(messages []AIMessage) (string, error) {
 	return result, nil
 }
 
-// EnhancedChat proses pesan AI dan mengeksekusi command yang terdeteksi
 func (ai *AIService) EnhancedChat(userMessage string, ctx *lib.CommandContext) (string, error) {
 	return ai.EnhancedChatWithHistory([]AIMessage{{Role: "user", Content: userMessage}}, ctx)
 }
 
-// EnhancedChatWithHistory proses daftar pesan AI dan mengeksekusi command yang terdeteksi
 func (ai *AIService) EnhancedChatWithHistory(messages []AIMessage, ctx *lib.CommandContext) (string, error) {
-	// Dapatkan respon dari AI
+
 	aiResponse, err := ai.Chat(messages)
 	if err != nil {
 		return "", err
 	}
 
-	// Deteksi dan eksekusi command dari respon AI
 	executedCommands, err := ai.detectAndExecuteCommands(aiResponse, ctx)
 	if err != nil {
-		// Jika ada error dalam eksekusi command, kita tetap mengembalikan respon AI
-		// tetapi dengan catatan bahwa ada error dalam eksekusi command
+
 		return aiResponse + "\n\n⚠️ *Catatan:* Terjadi error saat mengeksekusi command yang terdeteksi.", nil
 	}
 
-	// Jika ada command yang dieksekusi, tambahkan informasi ke respon
 	if executedCommands != "" {
 		return aiResponse + "\n\n" + executedCommands, nil
 	}
@@ -222,10 +217,8 @@ func (ai *AIService) EnhancedChatWithHistory(messages []AIMessage, ctx *lib.Comm
 	return aiResponse, nil
 }
 
-// detectAndExecuteCommands mendeteksi command dalam teks dan mengeksekusinya
 func (ai *AIService) detectAndExecuteCommands(text string, ctx *lib.CommandContext) (string, error) {
-	// Regex untuk menemukan command yang dimulai dengan titik diikuti oleh huruf
-	// Contoh: .play, .spotify, .menu, dll
+
 	commandRegex := regexp.MustCompile(`(?:\.|\\$)([a-zA-Z]+)(?:\s+([^\n]*))?`)
 	matches := commandRegex.FindAllStringSubmatch(text, -1)
 
@@ -241,19 +234,17 @@ func (ai *AIService) detectAndExecuteCommands(text string, ctx *lib.CommandConte
 			continue
 		}
 
-		cmd := match[1] // Nama command tanpa titik
-		argsStr := ""   // Argumen command
+		cmd := match[1]
+		argsStr := ""
 		if len(match) >= 3 && match[2] != "" {
 			argsStr = match[2]
 		}
 
-		// Pisahkan argumen berdasarkan spasi
 		var args []string
 		if argsStr != "" {
 			args = strings.Fields(argsStr)
 		}
 
-		// Eksekusi command
 		result, err := ai.executeCommand(cmd, args, ctx)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("❌ Gagal menjalankan %s: %v", cmd, err))
@@ -262,7 +253,6 @@ func (ai *AIService) detectAndExecuteCommands(text string, ctx *lib.CommandConte
 		}
 	}
 
-	// Gabungkan hasil
 	var resultParts []string
 	if len(executed) > 0 {
 		resultParts = append(resultParts, executed...)
@@ -278,12 +268,11 @@ func (ai *AIService) detectAndExecuteCommands(text string, ctx *lib.CommandConte
 	return strings.Join(resultParts, "\n"), nil
 }
 
-// executeCommand mengeksekusi command dengan nama dan argumen yang diberikan
 func (ai *AIService) executeCommand(cmdName string, args []string, ctx *lib.CommandContext) (string, error) {
-	// Dapatkan metadata dan handler command
+
 	metadata, exists := ai.registry.GetCommand(cmdName)
 	if !exists {
-		// Cek juga alias
+
 		found := false
 		for _, meta := range ai.registry.GetAllCommands() {
 			for _, alias := range meta.Alias {
@@ -308,26 +297,24 @@ func (ai *AIService) executeCommand(cmdName string, args []string, ctx *lib.Comm
 		return "", fmt.Errorf("handler untuk command '%s' tidak ditemukan", metadata.Cmd)
 	}
 
-	// Buat command context baru dengan argumen yang diberikan
 	newCtx := &lib.CommandContext{
-		Ctx:                     ctx.Ctx,
-		Client:                  ctx.Client,
-		BotClient:               ctx.BotClient,
-		JadibotSessionManager:   ctx.JadibotSessionManager,
-		Sender:                  ctx.Sender,
-		Chat:                    ctx.Chat,
-		PushName:                ctx.PushName,
-		IsGroup:                 ctx.IsGroup,
-		IsOwner:                 ctx.IsOwner,
-		Message:                 "." + cmdName + " " + strings.Join(args, " "),
-		Args:                    args,
-		MessageID:               ctx.MessageID,
-		EphemeralWrapper:        ctx.EphemeralWrapper,
-		ReplyMessage:            ctx.ReplyMessage,
-		Mentions:                ctx.Mentions,
+		Ctx:                   ctx.Ctx,
+		Client:                ctx.Client,
+		BotClient:             ctx.BotClient,
+		JadibotSessionManager: ctx.JadibotSessionManager,
+		Sender:                ctx.Sender,
+		Chat:                  ctx.Chat,
+		PushName:              ctx.PushName,
+		IsGroup:               ctx.IsGroup,
+		IsOwner:               ctx.IsOwner,
+		Message:               "." + cmdName + " " + strings.Join(args, " "),
+		Args:                  args,
+		MessageID:             ctx.MessageID,
+		EphemeralWrapper:      ctx.EphemeralWrapper,
+		ReplyMessage:          ctx.ReplyMessage,
+		Mentions:              ctx.Mentions,
 	}
 
-	// Eksekusi command
 	err := handler(newCtx)
 	if err != nil {
 		return "", err

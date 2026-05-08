@@ -5,55 +5,49 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
+	_ "github.com/mattn/go-sqlite3"
 )
-
 
 type JadibotStatus string
 
 const (
-	StatusActive   JadibotStatus = "active"
-	StatusPaused   JadibotStatus = "paused"
-	StatusStopped  JadibotStatus = "stopped"
+	StatusActive  JadibotStatus = "active"
+	StatusPaused  JadibotStatus = "paused"
+	StatusStopped JadibotStatus = "stopped"
 )
 
-
 type JadibotInfo = lib.JadibotInfo
-
 
 type DonationStatus string
 
 const (
-	DonationPending  DonationStatus = "pending"
-	DonationSuccess  DonationStatus = "success"
-	DonationExpired   DonationStatus = "expired"
-	DonationFailed    DonationStatus = "failed"
+	DonationPending DonationStatus = "pending"
+	DonationSuccess DonationStatus = "success"
+	DonationExpired DonationStatus = "expired"
+	DonationFailed  DonationStatus = "failed"
 )
 
-
 type DonationInfo struct {
-	ID            string
-	RefNo         string
-	UserJID       string
-	UserName      string
-	Amount        int
-	QRString      string
-	QRImageURL    string
-	Status        string
-	PaymentType   string
-	Issuer        string
-	Payor         string
-	ProductName   string
-	CreatedAt     interface{}
-	UpdatedAt     interface{}
+	ID          string
+	RefNo       string
+	UserJID     string
+	UserName    string
+	Amount      int
+	QRString    string
+	QRImageURL  string
+	Status      string
+	PaymentType string
+	Issuer      string
+	Payor       string
+	ProductName string
+	CreatedAt   interface{}
+	UpdatedAt   interface{}
 }
-
 
 type DatabaseManager struct {
 	DB *sql.DB
 }
-
 
 func NewDatabaseManager(dbPath string) (*DatabaseManager, error) {
 	db, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
@@ -61,13 +55,11 @@ func NewDatabaseManager(dbPath string) (*DatabaseManager, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	manager := &DatabaseManager{DB: db}
-
 
 	if err := manager.createTables(); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
@@ -75,7 +67,6 @@ func NewDatabaseManager(dbPath string) (*DatabaseManager, error) {
 
 	return manager, nil
 }
-
 
 func (m *DatabaseManager) createTables() error {
 	query := `
@@ -129,7 +120,6 @@ func (m *DatabaseManager) createTables() error {
 	return err
 }
 
-
 func (m *DatabaseManager) CreateJadibot(info JadibotInfo) error {
 	query := `
 	INSERT INTO jadibots (id, owner_jid, phone_number, session_path, status, created_at)
@@ -139,7 +129,6 @@ func (m *DatabaseManager) CreateJadibot(info JadibotInfo) error {
 	_, err := m.DB.Exec(query, info.ID, info.OwnerJID, info.PhoneNumber, info.SessionPath, time.Now())
 	return err
 }
-
 
 func (m *DatabaseManager) GetJadibot(id string) (*JadibotInfo, error) {
 	query := `
@@ -158,7 +147,6 @@ func (m *DatabaseManager) GetJadibot(id string) (*JadibotInfo, error) {
 		return nil, err
 	}
 
-
 	if createdAt.Valid {
 		info.CreatedAt = createdAt.Time
 	}
@@ -171,7 +159,6 @@ func (m *DatabaseManager) GetJadibot(id string) (*JadibotInfo, error) {
 
 	return &info, nil
 }
-
 
 func (m *DatabaseManager) GetJadibotByOwner(ownerJID string) ([]JadibotInfo, error) {
 	query := `
@@ -197,7 +184,6 @@ func (m *DatabaseManager) GetJadibotByOwner(ownerJID string) ([]JadibotInfo, err
 			return nil, err
 		}
 
-
 		if createdAt.Valid {
 			info.CreatedAt = createdAt.Time
 		}
@@ -213,7 +199,6 @@ func (m *DatabaseManager) GetJadibotByOwner(ownerJID string) ([]JadibotInfo, err
 
 	return jadibots, nil
 }
-
 
 func (m *DatabaseManager) GetAllJadibot() ([]JadibotInfo, error) {
 	query := `
@@ -239,7 +224,6 @@ func (m *DatabaseManager) GetAllJadibot() ([]JadibotInfo, error) {
 			return nil, err
 		}
 
-
 		if createdAt.Valid {
 			info.CreatedAt = createdAt.Time
 		}
@@ -256,7 +240,6 @@ func (m *DatabaseManager) GetAllJadibot() ([]JadibotInfo, error) {
 	return jadibots, nil
 }
 
-
 func (m *DatabaseManager) UpdateJadibotStatus(id string, status JadibotStatus) error {
 	query := `
 	UPDATE jadibots
@@ -270,13 +253,11 @@ func (m *DatabaseManager) UpdateJadibotStatus(id string, status JadibotStatus) e
 	return err
 }
 
-
 func (m *DatabaseManager) DeleteJadibot(id string) error {
 	query := `DELETE FROM jadibots WHERE id = ?`
 	_, err := m.DB.Exec(query, id)
 	return err
 }
-
 
 func (m *DatabaseManager) GetActiveJadibot() ([]JadibotInfo, error) {
 	query := `
@@ -302,7 +283,6 @@ func (m *DatabaseManager) GetActiveJadibot() ([]JadibotInfo, error) {
 			return nil, err
 		}
 
-
 		if createdAt.Valid {
 			info.CreatedAt = createdAt.Time
 		}
@@ -319,13 +299,10 @@ func (m *DatabaseManager) GetActiveJadibot() ([]JadibotInfo, error) {
 	return jadibots, nil
 }
 
-
 func (m *DatabaseManager) Close() error {
 	return m.DB.Close()
 }
 
-
-// BanJID menambahkan grup atau user ke daftar banned
 func (m *DatabaseManager) BanJID(jid string, banType string, reason string, bannedBy string) error {
 	query := `
 	INSERT OR REPLACE INTO banned (id, type, jid, reason, banned_at, banned_by)
@@ -337,16 +314,12 @@ func (m *DatabaseManager) BanJID(jid string, banType string, reason string, bann
 	return err
 }
 
-
-// UnbanJID menghapus grup atau user dari daftar banned
 func (m *DatabaseManager) UnbanJID(jid string, banType string) error {
 	query := `DELETE FROM banned WHERE type = ? AND jid = ?`
 	_, err := m.DB.Exec(query, banType, jid)
 	return err
 }
 
-
-// IsBanned mengecek apakah grup atau user sedang di-banned
 func (m *DatabaseManager) IsBanned(jid string, banType string) (bool, error) {
 	query := `SELECT COUNT(*) FROM banned WHERE type = ? AND jid = ?`
 	var count int
@@ -357,8 +330,6 @@ func (m *DatabaseManager) IsBanned(jid string, banType string) (bool, error) {
 	return count > 0, nil
 }
 
-
-// GetBannedList mengambil daftar semua yang di-banned
 func (m *DatabaseManager) GetBannedList(banType string) ([]map[string]string, error) {
 	var query string
 	var rows *sql.Rows
@@ -405,8 +376,6 @@ func (m *DatabaseManager) GetBannedList(banType string) ([]map[string]string, er
 	return result, nil
 }
 
-
-// GetBannedCount menghitung jumlah yang di-banned berdasarkan tipe
 func (m *DatabaseManager) GetBannedCount(banType string) (int, error) {
 	var query string
 	var count int
@@ -428,7 +397,6 @@ func (m *DatabaseManager) GetBannedCount(banType string) (int, error) {
 	return count, nil
 }
 
-
 func (m *DatabaseManager) CreateDonation(info DonationInfo) error {
 	query := `
 	INSERT INTO donations (id, ref_no, user_jid, user_name, amount, qr_string, qr_image_url, status, product_name, created_at)
@@ -438,7 +406,6 @@ func (m *DatabaseManager) CreateDonation(info DonationInfo) error {
 	_, err := m.DB.Exec(query, info.ID, info.RefNo, info.UserJID, info.UserName, info.Amount, info.QRString, info.QRImageURL, info.ProductName, time.Now())
 	return err
 }
-
 
 func (m *DatabaseManager) GetDonation(refNo string) (*DonationInfo, error) {
 	query := `
@@ -488,7 +455,6 @@ func (m *DatabaseManager) GetDonation(refNo string) (*DonationInfo, error) {
 	return &info, nil
 }
 
-
 func (m *DatabaseManager) UpdateDonationStatus(refNo string, status DonationStatus, paymentType, issuer, payor string) error {
 	query := `
 	UPDATE donations
@@ -503,7 +469,6 @@ func (m *DatabaseManager) UpdateDonationStatus(refNo string, status DonationStat
 	_, err := m.DB.Exec(query, status, paymentType, issuer, payor, refNo)
 	return err
 }
-
 
 func (m *DatabaseManager) GetUserDonations(userJID string) ([]DonationInfo, error) {
 	query := `
@@ -562,7 +527,6 @@ func (m *DatabaseManager) GetUserDonations(userJID string) ([]DonationInfo, erro
 
 	return donations, nil
 }
-
 
 func (m *DatabaseManager) GetPendingDonations() ([]DonationInfo, error) {
 	query := `

@@ -4,16 +4,27 @@ import (
 	"reflect"
 
 	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/types"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
-	"github.com/jrevanaldi-ai/gowa-bot/lib"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
+	"github.com/jrevanaldi-ai/gowa-bot/lib"
+	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"github.com/jrevanaldi-ai/gowa/types"
+	"google.golang.org/protobuf/proto"
 )
 
-// Symbols variable stores the map of symbols for the interpreter.
 var Symbols = map[string]map[string]reflect.Value{}
 
 func init() {
+	Symbols["google.golang.org/protobuf/proto/proto"] = map[string]reflect.Value{
+		"String":  reflect.ValueOf(proto.String),
+		"Int32":   reflect.ValueOf(proto.Int32),
+		"Int64":   reflect.ValueOf(proto.Int64),
+		"Bool":    reflect.ValueOf(proto.Bool),
+		"Uint32":  reflect.ValueOf(proto.Uint32),
+		"Uint64":  reflect.ValueOf(proto.Uint64),
+		"Float32": reflect.ValueOf(proto.Float32),
+		"Float64": reflect.ValueOf(proto.Float64),
+	}
+
 	Symbols["github.com/jrevanaldi-ai/gowa/gowa"] = map[string]reflect.Value{
 		"Client": reflect.ValueOf((*gowa.Client)(nil)),
 	}
@@ -46,5 +57,7 @@ func init() {
 	Symbols["github.com/jrevanaldi-ai/gowa-bot/helper"] = map[string]reflect.Value{
 		"CreateSimpleReply": reflect.ValueOf(helper.CreateSimpleReply),
 		"NewLogger":         reflect.ValueOf(helper.NewLogger),
+		"FormatAmount":      reflect.ValueOf(helper.FormatAmount),
+		"FormatFileSize":    reflect.ValueOf(helper.FormatFileSize),
 	}
 }

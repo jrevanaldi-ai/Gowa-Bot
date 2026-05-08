@@ -1,10 +1,10 @@
 # Binaries for programs and plugins
+gowa-bot
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-gowa-bot
 
 # Test binary, built with `go test -c`
 *.test
@@ -20,10 +20,13 @@ go.work
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Database files
 *.db
-*.db-journal
+*.db-*
+gowa-bot.db*
 
 # IDE and editor files
 .vscode/
@@ -44,10 +47,12 @@ tmp/
 temp/
 *.tmp
 *.log
+.gemini/
 
-# Node modules (for JS scripts)
+# Node modules (just in case)
 node_modules/
 
-# Remove comments script (local utility, not needed in repo)
+# Local utility scripts
+clean_comments.go
 remove-go-comments.js
 REMOVE-GO-COMMENTS.md

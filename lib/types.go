@@ -8,7 +8,6 @@ import (
 	"github.com/jrevanaldi-ai/gowa/types"
 )
 
-
 type BotClientInterface interface {
 	SetSelfMode(mode bool)
 	GetSelfMode() bool
@@ -19,7 +18,6 @@ type BotClientInterface interface {
 	SetPrefixes(prefixes []string)
 	GetPrefixes() []string
 }
-
 
 type JadibotSessionManagerInterface interface {
 	CreateJadibot(ctx context.Context, ownerJID string, phoneNumber string) (string, error)
@@ -34,7 +32,6 @@ type JadibotSessionManagerInterface interface {
 	GetActiveBotsCount() int
 }
 
-
 type JadibotInfo struct {
 	ID           string
 	OwnerJID     string
@@ -46,7 +43,6 @@ type JadibotInfo struct {
 	LastActiveAt interface{}
 }
 
-
 type CommandMetadata struct {
 	Cmd       string
 	Tag       string
@@ -57,7 +53,6 @@ type CommandMetadata struct {
 	Alias     []string
 }
 
-
 type ReplyMessageInfo struct {
 	MessageID string
 	Sender    string
@@ -65,27 +60,24 @@ type ReplyMessageInfo struct {
 }
 
 type CommandContext struct {
-	Ctx                     context.Context
-	Client                  *gowa.Client
-	BotClient               BotClientInterface
-	JadibotSessionManager   JadibotSessionManagerInterface
-	Sender                  types.JID
-	Chat                    types.JID
-	PushName                string
-	IsGroup                 bool
-	IsOwner                 bool
-	Message                 string
-	Args                    []string
-	MessageID               types.MessageID
-	EphemeralWrapper        func(ctx context.Context, jid types.JID, msg *waE2E.Message) (*waE2E.Message, error)
-	
-	// ReplyMessage berisi informasi tentang pesan yang di-reply (jika ada)
-	ReplyMessage            *ReplyMessageInfo
-	
-	// Mententions berisi daftar JID yang di-tag dalam pesan
-	Mentions                []string
-}
+	Ctx                   context.Context
+	Client                *gowa.Client
+	BotClient             BotClientInterface
+	JadibotSessionManager JadibotSessionManagerInterface
+	Sender                types.JID
+	Chat                  types.JID
+	PushName              string
+	IsGroup               bool
+	IsOwner               bool
+	Message               string
+	Args                  []string
+	MessageID             types.MessageID
+	EphemeralWrapper      func(ctx context.Context, jid types.JID, msg *waE2E.Message) (*waE2E.Message, error)
 
+	ReplyMessage *ReplyMessageInfo
+
+	Mentions []string
+}
 
 func (c *CommandContext) SendMessage(message *waE2E.Message) (interface{}, error) {
 
@@ -101,21 +93,17 @@ func (c *CommandContext) SendMessage(message *waE2E.Message) (interface{}, error
 	return c.Client.SendMessage(c.Ctx, c.Chat, message)
 }
 
-
 type SendResponse struct {
 	ID        string
 	Timestamp interface{}
 }
 
-
 type CommandHandler func(ctx *CommandContext) error
-
 
 type CommandRegistry struct {
 	commands map[string]*CommandMetadata
 	handlers map[string]CommandHandler
 }
-
 
 func NewCommandRegistry() *CommandRegistry {
 	return &CommandRegistry{
@@ -124,12 +112,10 @@ func NewCommandRegistry() *CommandRegistry {
 	}
 }
 
-
 func (r *CommandRegistry) Register(metadata *CommandMetadata, handler CommandHandler) {
 
 	r.commands[metadata.Cmd] = metadata
 	r.handlers[metadata.Cmd] = handler
-
 
 	for _, alias := range metadata.Alias {
 		r.commands[alias] = metadata
@@ -137,24 +123,20 @@ func (r *CommandRegistry) Register(metadata *CommandMetadata, handler CommandHan
 	}
 }
 
-
 func (r *CommandRegistry) GetCommand(cmd string) (*CommandMetadata, bool) {
 	meta, ok := r.commands[cmd]
 	return meta, ok
 }
-
 
 func (r *CommandRegistry) GetHandler(cmd string) (CommandHandler, bool) {
 	handler, ok := r.handlers[cmd]
 	return handler, ok
 }
 
-
 func (r *CommandRegistry) IsCommand(cmd string) bool {
 	_, ok := r.commands[cmd]
 	return ok
 }
-
 
 func (r *CommandRegistry) GetAllCommands() []*CommandMetadata {
 	var commands []*CommandMetadata
@@ -170,7 +152,6 @@ func (r *CommandRegistry) GetAllCommands() []*CommandMetadata {
 	return commands
 }
 
-
 func (r *CommandRegistry) GetCommandsByTag(tag string) []*CommandMetadata {
 	var commands []*CommandMetadata
 	seen := make(map[string]bool)
@@ -184,7 +165,6 @@ func (r *CommandRegistry) GetCommandsByTag(tag string) []*CommandMetadata {
 
 	return commands
 }
-
 
 func StringToJID(jidStr string) types.JID {
 	jid, err := types.ParseJID(jidStr)

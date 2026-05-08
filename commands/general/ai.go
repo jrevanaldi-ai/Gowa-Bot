@@ -51,7 +51,6 @@ func LuneHandler(ctx *lib.CommandContext) error {
 
 	query := strings.Join(ctx.Args, " ")
 
-	// Handle reset command
 	if strings.ToLower(query) == "reset" {
 		cache := ctx.BotClient.GetCache().(*helper.Cache)
 		cache.Delete("ai_history_" + ctx.Chat.String())
@@ -59,33 +58,28 @@ func LuneHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	// Ambil history dari cache
 	cache := ctx.BotClient.GetCache().(*helper.Cache)
 	historyKey := "ai_history_" + ctx.Chat.String()
-	
+
 	var history []helper.AIMessage
 	if val, found := cache.Get(historyKey); found {
 		history = val.([]helper.AIMessage)
 	}
 
-	// Tambahkan pesan user ke history
 	history = append(history, helper.AIMessage{
 		Role:    "user",
 		Content: query,
 	})
 
-	// Batasi history (misal 15 pesan terakhir)
 	maxHistory := 15
 	if len(history) > maxHistory {
 		history = history[len(history)-maxHistory:]
 	}
 
-	// Pastikan pesan pertama adalah 'user' (Syarat Anthropic API)
 	for len(history) > 0 && history[0].Role != "user" {
 		history = history[1:]
 	}
 
-	// Gunakan EnhancedChatWithHistory
 	result, err := aiService.EnhancedChatWithHistory(history, ctx)
 	if err != nil {
 		errorMsg := "❌ *Gagal mendapatkan respon AI!*\n\n" +
@@ -96,13 +90,11 @@ func LuneHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	// Tambahkan respon AI ke history
 	history = append(history, helper.AIMessage{
 		Role:    "assistant",
 		Content: result,
 	})
 
-	// Simpan kembali ke cache (TTL 30 menit)
 	if len(history) > maxHistory {
 		history = history[len(history)-maxHistory:]
 	}

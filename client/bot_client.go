@@ -10,14 +10,13 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
-	"github.com/jrevanaldi-ai/gowa/types"
-	"github.com/jrevanaldi-ai/gowa/types/events"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/owner"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
+	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"github.com/jrevanaldi-ai/gowa/types"
+	"github.com/jrevanaldi-ai/gowa/types/events"
 )
-
 
 type BotClient struct {
 	Client                *gowa.Client
@@ -34,7 +33,6 @@ type BotClient struct {
 	mu                    sync.RWMutex
 }
 
-
 type BotConfig struct {
 	Owners                []string
 	Prefixes              []string
@@ -45,7 +43,6 @@ type BotConfig struct {
 	JadibotSessionManager *helper.JadibotSessionManager
 	DBManager             *helper.DatabaseManager
 }
-
 
 func (b *BotClient) SetSelfMode(mode bool) {
 	b.mu.Lock()
@@ -59,23 +56,19 @@ func (b *BotClient) SetSelfMode(mode bool) {
 	}
 }
 
-
 func (b *BotClient) GetSelfMode() bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.SelfMode
 }
 
-
 func (b *BotClient) GetDBManager() interface{} {
 	return b.DBManager
 }
 
-
 func (b *BotClient) GetCache() interface{} {
 	return b.Cache
 }
-
 
 func (b *BotClient) SetPrefixes(prefixes []string) {
 	b.mu.Lock()
@@ -84,13 +77,11 @@ func (b *BotClient) SetPrefixes(prefixes []string) {
 	b.Logger.Info("Prefixes updated: %v", prefixes)
 }
 
-
 func (b *BotClient) GetPrefixes() []string {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.Prefixes
 }
-
 
 func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 	owners := make(map[string]bool)
@@ -98,7 +89,6 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		owners[owner] = true
 	}
 
-	
 	prefixes := config.Prefixes
 	if len(prefixes) == 0 {
 		prefixes = []string{"."}
@@ -116,24 +106,20 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		Prefixes:              prefixes,
 	}
 
-
 	botClient.EphemeralHelper = helper.NewEphemeralHelper(nil, 5*time.Minute)
 
 	return botClient
 }
-
 
 func (b *BotClient) SetClient(client *gowa.Client) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.Client = client
 
-
 	if b.EphemeralHelper != nil {
 		b.EphemeralHelper.SetClient(client)
 	}
 }
-
 
 func (b *BotClient) SendMessage(ctx context.Context, chat types.JID, message *waE2E.Message) (interface{}, error) {
 
@@ -147,16 +133,13 @@ func (b *BotClient) SendMessage(ctx context.Context, chat types.JID, message *wa
 		message = wrappedMsg
 	}
 
-
 	return b.Client.SendMessage(ctx, chat, message)
 }
-
 
 func (b *BotClient) HandleMessage(ctx context.Context, evt *events.Message) {
 
 	go b.processMessage(ctx, evt)
 }
-
 
 func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 
@@ -164,22 +147,17 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	selfMode := b.SelfMode
 	b.mu.RUnlock()
 
-
 	isOwner := b.isOwner(evt.Info.Sender)
-
 
 	if evt.Info.IsFromMe && !selfMode && !isOwner {
 		return
 	}
 
-
 	if evt.Info.IsFromMe && selfMode && !isOwner {
 		return
 	}
 
-
 	var msg string
-
 
 	switch {
 	case evt.Message.Conversation != nil:
@@ -239,7 +217,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		if evt.Message.EditedMessage.Message != nil {
 
 			b.processMessage(ctx, &events.Message{
-				Info: evt.Info,
+				Info:    evt.Info,
 				Message: evt.Message.EditedMessage.Message,
 			})
 			return
@@ -249,7 +227,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		if evt.Message.EphemeralMessage.Message != nil {
 
 			b.processMessage(ctx, &events.Message{
-				Info: evt.Info,
+				Info:    evt.Info,
 				Message: evt.Message.EphemeralMessage.Message,
 			})
 			return
@@ -258,7 +236,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 
 		if evt.Message.ViewOnceMessage.Message != nil {
 			b.processMessage(ctx, &events.Message{
-				Info: evt.Info,
+				Info:    evt.Info,
 				Message: evt.Message.ViewOnceMessage.Message,
 			})
 			return
@@ -267,7 +245,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 
 		if evt.Message.ViewOnceMessageV2.Message != nil {
 			b.processMessage(ctx, &events.Message{
-				Info: evt.Info,
+				Info:    evt.Info,
 				Message: evt.Message.ViewOnceMessageV2.Message,
 			})
 			return
@@ -276,7 +254,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 
 		if evt.Message.DocumentWithCaptionMessage.Message != nil {
 			b.processMessage(ctx, &events.Message{
-				Info: evt.Info,
+				Info:    evt.Info,
 				Message: evt.Message.DocumentWithCaptionMessage.Message,
 			})
 			return
@@ -286,7 +264,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	if msg == "" {
 		return
 	}
-
 
 	if b.DBManager != nil && !isOwner {
 
@@ -300,7 +277,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 			}
 		}
 
-
 		isUserBanned, err := b.DBManager.IsBanned(evt.Info.Sender.String(), "user")
 		if err != nil {
 			b.Logger.Warning("Failed to check user ban status: %v", err)
@@ -309,7 +285,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 			return
 		}
 	}
-
 
 	if strings.HasPrefix(msg, "$") && isOwner {
 		args := owner.ParseExecCommand(msg)
@@ -320,16 +295,13 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		}
 	}
 
-
 	cmd, args := b.parseCommandWithOwner(msg, isOwner, evt.Info.IsFromMe)
-	
-	// Cek apakah mengandung keyword "lune" (no prefix mode)
-	// Kita cek ini sebelum validasi command registry agar "lune" punya prioritas atau sebagai fallback
+
 	if cmd == "" || (cmd != "lune" && !b.Registry.IsCommand(cmd)) {
 		lowerMsg := strings.ToLower(msg)
 		if strings.Contains(lowerMsg, "lune") {
 			if handler, ok := b.Registry.GetHandler("lune"); ok {
-				// Log aktivitas
+
 				chatType := "Private"
 				if evt.Info.IsGroup {
 					chatType = "Group"
@@ -369,17 +341,14 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		return
 	}
 
-
 	meta, found := b.Registry.GetCommand(cmd)
 	if !found {
 		return
 	}
 
-
 	if meta.OwnerOnly && !isOwner {
 		return
 	}
-
 
 	chatType := "Private"
 	if evt.Info.IsGroup {
@@ -392,12 +361,10 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		chatType,
 	)
 
-
 	handler, ok := b.Registry.GetHandler(cmd)
 	if !ok {
 		return
 	}
-
 
 	var replyMsg *lib.ReplyMessageInfo
 	if evt.Message.ExtendedTextMessage != nil && evt.Message.ExtendedTextMessage.ContextInfo != nil {
@@ -411,7 +378,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		}
 	}
 
-
 	var mentions []string
 	if evt.Message.ExtendedTextMessage != nil && evt.Message.ExtendedTextMessage.ContextInfo != nil {
 		contextInfo := evt.Message.ExtendedTextMessage.ContextInfo
@@ -423,20 +389,19 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		}
 	}
 
-
 	cmdCtx := &lib.CommandContext{
-		Ctx:                     context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
-		Client:                  b.Client,
-		BotClient:               b,
-		JadibotSessionManager:   b.JadibotSessionManager,
-		Sender:                  evt.Info.Sender,
-		Chat:                    evt.Info.Chat,
-		PushName:                evt.Info.PushName,
-		IsGroup:                 evt.Info.IsGroup,
-		IsOwner:                 isOwner,
-		Message:                 msg,
-		Args:                    args,
-		MessageID:               evt.Info.ID,
+		Ctx:                   context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
+		Client:                b.Client,
+		BotClient:             b,
+		JadibotSessionManager: b.JadibotSessionManager,
+		Sender:                evt.Info.Sender,
+		Chat:                  evt.Info.Chat,
+		PushName:              evt.Info.PushName,
+		IsGroup:               evt.Info.IsGroup,
+		IsOwner:               isOwner,
+		Message:               msg,
+		Args:                  args,
+		MessageID:             evt.Info.ID,
 		EphemeralWrapper: func(ctx context.Context, jid types.JID, message *waE2E.Message) (*waE2E.Message, error) {
 			if b.EphemeralHelper != nil {
 				return b.EphemeralHelper.WrapMessageWithEphemeral(ctx, jid, message)
@@ -447,7 +412,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		Mentions:     mentions,
 	}
 
-
 	b.mu.RLock()
 	client := b.Client
 	b.mu.RUnlock()
@@ -456,7 +420,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		b.Logger.Error("Client is nil, cannot execute command")
 		return
 	}
-
 
 	if err := handler(cmdCtx); err != nil {
 		b.Logger.Error("Command error: %v", err)
@@ -474,22 +437,21 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	}
 }
 
-
 func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, args []string) {
 
 	cmdCtx := &lib.CommandContext{
-		Ctx:                     context.WithValue(ctx, "registry", b.Registry),
-		Client:                  b.Client,
-		BotClient:               b,
-		JadibotSessionManager:   b.JadibotSessionManager,
-		Sender:                  evt.Info.Sender,
-		Chat:                    evt.Info.Chat,
-		PushName:                evt.Info.PushName,
-		IsGroup:                 evt.Info.IsGroup,
-		IsOwner:                 true,
-		Message:                 evt.Message.GetConversation(),
-		Args:                    args,
-		MessageID:               evt.Info.ID,
+		Ctx:                   context.WithValue(ctx, "registry", b.Registry),
+		Client:                b.Client,
+		BotClient:             b,
+		JadibotSessionManager: b.JadibotSessionManager,
+		Sender:                evt.Info.Sender,
+		Chat:                  evt.Info.Chat,
+		PushName:              evt.Info.PushName,
+		IsGroup:               evt.Info.IsGroup,
+		IsOwner:               true,
+		Message:               evt.Message.GetConversation(),
+		Args:                  args,
+		MessageID:             evt.Info.ID,
 		EphemeralWrapper: func(ctx context.Context, jid types.JID, message *waE2E.Message) (*waE2E.Message, error) {
 			if b.EphemeralHelper != nil {
 				return b.EphemeralHelper.WrapMessageWithEphemeral(ctx, jid, message)
@@ -498,25 +460,21 @@ func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, 
 		},
 	}
 
-
 	handler, ok := b.Registry.GetHandler("exec")
 	if !ok {
 		return
 	}
-
 
 	if err := handler(cmdCtx); err != nil {
 		b.Logger.Error("Exec command error: %v", err)
 	}
 }
 
-
 func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool, forcePrefix bool) (string, []string) {
 
 	b.mu.RLock()
 	prefixes := b.Prefixes
 	b.mu.RUnlock()
-
 
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(msg, prefix) {
@@ -534,13 +492,11 @@ func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool, forcePrefix 
 		}
 	}
 
-
 	if isOwner && !forcePrefix {
 
 		if strings.HasPrefix(msg, "$") {
 			return "", nil
 		}
-
 
 		parts := strings.Fields(msg)
 		if len(parts) == 0 {
@@ -557,7 +513,6 @@ func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool, forcePrefix 
 	return "", nil
 }
 
-
 func (b *BotClient) parseCommand(msg string) (string, []string) {
 
 	prefix := "."
@@ -565,14 +520,11 @@ func (b *BotClient) parseCommand(msg string) (string, []string) {
 		prefix = "$"
 	}
 
-
 	if !strings.HasPrefix(msg, prefix) {
 		return "", nil
 	}
 
-
 	msg = strings.TrimPrefix(msg, prefix)
-
 
 	parts := strings.Fields(msg)
 	if len(parts) == 0 {
@@ -588,11 +540,9 @@ func (b *BotClient) parseCommand(msg string) (string, []string) {
 	return cmd, args
 }
 
-
 func (b *BotClient) isOwner(jid types.JID) bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
-
 
 	if b.Client != nil && b.Client.Store != nil && b.Client.Store.ID != nil {
 		if jid.User == b.Client.Store.ID.User {
@@ -600,16 +550,13 @@ func (b *BotClient) isOwner(jid types.JID) bool {
 		}
 	}
 
-
 	if b.Owners[jid.String()] {
 		return true
 	}
 
-
 	if b.Owners[jid.User] {
 		return true
 	}
-
 
 	if b.IsMainBot && b.DBManager != nil {
 		jadibots, err := b.DBManager.GetActiveJadibot()
@@ -625,20 +572,17 @@ func (b *BotClient) isOwner(jid types.JID) bool {
 	return false
 }
 
-
 func (b *BotClient) AddOwner(jid string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.Owners[jid] = true
 }
 
-
 func (b *BotClient) RemoveOwner(jid string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	delete(b.Owners, jid)
 }
-
 
 func (b *BotClient) EventHandler(evt any) {
 	switch v := evt.(type) {
