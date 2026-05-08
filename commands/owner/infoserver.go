@@ -88,8 +88,12 @@ func collectServerInfo() string {
 	info.WriteString("┌─⦿ *System Information*\n")
 	info.WriteString(fmt.Sprintf("│ • *OS:* %s\n", getOSInfo()))
 	info.WriteString(fmt.Sprintf("│ • *Architecture:* %s\n", runtime.GOARCH))
-	info.WriteString(fmt.Sprintf("│ • *Hostname:* %s\n", getHostname()))
 	info.WriteString(fmt.Sprintf("│ • *Uptime:* %s\n", getSystemUptime()))
+	info.WriteString(fmt.Sprintf("│ • *Server Time:* %s\n", time.Now().Format("15:04:05 MST")))
+	info.WriteString(fmt.Sprintf("│ • *Date:* %s\n", time.Now().Format("2006-01-02")))
+	if runtime.GOOS == "linux" {
+		info.WriteString(fmt.Sprintf("│ • *Load Avg:* %s\n", getLoadAverage()))
+	}
 	info.WriteString("└──────────────\n\n")
 
 
@@ -112,8 +116,9 @@ func collectServerInfo() string {
 	info.WriteString(fmt.Sprintf("│ • *Version:* %s\n", runtime.Version()))
 	info.WriteString(fmt.Sprintf("│ • *Goroutines:* %d\n", runtime.NumGoroutine()))
 	info.WriteString(fmt.Sprintf("│ • *GC Count:* %d\n", getGCCount()))
-	info.WriteString(fmt.Sprintf("│ • *Memory Used:* %s\n", getGoMemory()))
-	info.WriteString(fmt.Sprintf("│ • *Memory Total:* %s\n", getGoTotalMemory()))
+	info.WriteString(fmt.Sprintf("│ • *Heap Used:* %s\n", getGoMemory()))
+	info.WriteString(fmt.Sprintf("│ • *Heap Total:* %s\n", getGoTotalMemory()))
+	info.WriteString(fmt.Sprintf("│ • *Process RSS:* %s\n", getProcessRSS()))
 	info.WriteString("└──────────────\n\n")
 
 
@@ -125,23 +130,16 @@ func collectServerInfo() string {
 	info.WriteString("└──────────────\n\n")
 
 
-	info.WriteString("┌─⦿ *Network*\n")
-	info.WriteString(fmt.Sprintf("│ • *IP Public:* %s\n", getPublicIP()))
-	info.WriteString(fmt.Sprintf("│ • *IP Local:* %s\n", getLocalIP()))
-	info.WriteString("└──────────────\n\n")
-
-
 	info.WriteString("┌─⦿ *Bot Information*\n")
 	info.WriteString(fmt.Sprintf("│ • *Uptime:* %s\n", getBotUptime()))
 	info.WriteString(fmt.Sprintf("│ • *Start Time:* %s\n", getBotStartTime()))
 	info.WriteString(fmt.Sprintf("│ • *GOMAXPROCS:* %d\n", runtime.GOMAXPROCS(0)))
-	info.WriteString(fmt.Sprintf("│ • *Go Version:* %s\n", runtime.Version()))
 	info.WriteString("└──────────────\n\n")
 
 
 	info.WriteString("┌─⦿ *Process*\n")
 	info.WriteString(fmt.Sprintf("│ • *PID:* %d\n", os.Getpid()))
-	info.WriteString(fmt.Sprintf("│ • *Path:* %s\n", getExecutablePath()))
+	info.WriteString(fmt.Sprintf("│ • *NumCPU:* %d\n", runtime.NumCPU()))
 	info.WriteString(fmt.Sprintf("│ • *Threads:* %d\n", getThreadCount()))
 	info.WriteString("└──────────────\n\n")
 
@@ -165,19 +163,23 @@ func getOSInfo() string {
 	}
 }
 
-func getHostname() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return "Unknown"
-	}
-	return hostname
-}
-
 func getSystemUptime() string {
+	if runtime.GOOS == "linux" {
+		cmd := exec.Command("cat", "/proc/uptime")
+		output, err := cmd.Output()
+		if err == nil {
+			parts := strings.Fields(string(output))
+			if len(parts) > 0 {
+				uptimeSeconds, _ := strconv.ParseFloat(parts[0], 64)
+				uptime := time.Duration(uptimeSeconds) * time.Second
+				return formatDuration(uptime)
+			}
+		}
+	}
+
 	cmd := exec.Command("uptime", "-s")
 	output, err := cmd.Output()
 	if err != nil {
-
 		return "N/A"
 	}
 
@@ -189,6 +191,36 @@ func getSystemUptime() string {
 	uptime := time.Since(startTime)
 	return formatDuration(uptime)
 }
+
+func getLoadAverage() string {
+	if runtime.GOOS == "linux" {
+		cmd := exec.Command("cat", "/proc/loadavg")
+		output, err := cmd.Output()
+		if err == nil {
+			parts := strings.Fields(string(output))
+			if len(parts) >= 3 {
+				return fmt.Sprintf("%s, %s, %s", parts[0], parts[1], parts[2])
+			}
+		}
+	}
+	return "N/A"
+}
+
+func getProcessRSS() string {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	if runtime.GOOS == "linux" {
+		cmd := exec.Command("ps", "-o", "rss=", "-p", strconv.Itoa(os.Getpid()))
+		output, err := cmd.Output()
+		if err == nil {
+			rssKb, _ := strconv.ParseInt(strings.TrimSpace(string(output)), 10, 64)
+			return formatBytes(rssKb * 1024)
+		}
+	}
+	return formatBytes(int64(m.Sys))
+}
+
 
 func getCPUModel() string {
 
@@ -401,39 +433,6 @@ func getDiskInfo(field string) string {
 	return "N/A"
 }
 
-func getPublicIP() string {
-
-	services := []string{
-		"curl -s ifconfig.me",
-		"curl -s api.ipify.org",
-		"curl -s icanhazip.com",
-	}
-
-	for _, service := range services {
-		cmd := exec.Command("sh", "-c", service)
-		output, err := cmd.Output()
-		if err == nil && len(output) > 0 {
-			return strings.TrimSpace(string(output))
-		}
-	}
-
-	return "N/A"
-}
-
-func getLocalIP() string {
-
-	cmd := exec.Command("hostname", "-I")
-	output, err := cmd.Output()
-	if err == nil && len(output) > 0 {
-		ips := strings.Fields(string(output))
-		if len(ips) > 0 {
-			return ips[0]
-		}
-	}
-
-	return "127.0.0.1"
-}
-
 func getBotUptime() string {
 	uptime := time.Since(startTime)
 	return formatDuration(uptime)
@@ -441,19 +440,6 @@ func getBotUptime() string {
 
 func getBotStartTime() string {
 	return startTime.Format("2006-01-02 15:04:05")
-}
-
-func getExecutablePath() string {
-	path, err := os.Executable()
-	if err != nil {
-		return "Unknown"
-	}
-
-
-	if len(path) > 50 {
-		path = "..." + path[len(path)-47:]
-	}
-	return path
 }
 
 func getThreadCount() int {
