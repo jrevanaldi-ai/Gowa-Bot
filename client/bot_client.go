@@ -29,6 +29,7 @@ type BotClient struct {
 	DBManager             *helper.DatabaseManager
 	Owners                map[string]bool
 	SelfMode              bool
+	IsMainBot             bool
 	Prefixes              []string
 	mu                    sync.RWMutex
 }
@@ -40,6 +41,7 @@ type BotConfig struct {
 	MaxWorkers            int
 	EnableCache           bool
 	SelfMode              bool
+	IsMainBot             bool
 	JadibotSessionManager *helper.JadibotSessionManager
 	DBManager             *helper.DatabaseManager
 }
@@ -67,6 +69,11 @@ func (b *BotClient) GetSelfMode() bool {
 
 func (b *BotClient) GetDBManager() interface{} {
 	return b.DBManager
+}
+
+
+func (b *BotClient) GetCache() interface{} {
+	return b.Cache
 }
 
 
@@ -103,6 +110,7 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		Cache:                 helper.NewCache(),
 		Owners:                owners,
 		SelfMode:              config.SelfMode,
+		IsMainBot:             config.IsMainBot,
 		JadibotSessionManager: config.JadibotSessionManager,
 		DBManager:             config.DBManager,
 		Prefixes:              prefixes,
@@ -157,17 +165,16 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	b.mu.RUnlock()
 
 
-	if evt.Info.IsFromMe && !selfMode {
+	isOwner := b.isOwner(evt.Info.Sender)
+
+
+	if evt.Info.IsFromMe && !selfMode && !isOwner {
 		return
 	}
 
 
-	if evt.Info.IsFromMe && selfMode {
-
-		if !b.isOwner(evt.Info.Sender) {
-			b.Logger.Debug("Self mode: Ignoring message from non-owner self")
-			return
-		}
+	if evt.Info.IsFromMe && selfMode && !isOwner {
+		return
 	}
 
 
@@ -281,9 +288,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	}
 
 
-	isOwner := b.isOwner(evt.Info.Sender)
-
-
 	if b.DBManager != nil && !isOwner {
 
 		if evt.Info.IsGroup {
@@ -317,7 +321,50 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	}
 
 
-	cmd, args := b.parseCommandWithOwner(msg, isOwner)
+	cmd, args := b.parseCommandWithOwner(msg, isOwner, evt.Info.IsFromMe)
+	
+	// Cek apakah mengandung keyword "lune" (no prefix mode)
+	// Kita cek ini sebelum validasi command registry agar "lune" punya prioritas atau sebagai fallback
+	if cmd == "" || (cmd != "lune" && !b.Registry.IsCommand(cmd)) {
+		lowerMsg := strings.ToLower(msg)
+		if strings.Contains(lowerMsg, "lune") {
+			if handler, ok := b.Registry.GetHandler("lune"); ok {
+				// Log aktivitas
+				chatType := "Private"
+				if evt.Info.IsGroup {
+					chatType = "Group"
+				}
+				b.Logger.Message(evt.Info.PushName, evt.Info.Sender.String(), "lune (keyword)", chatType)
+
+				cmdCtx := &lib.CommandContext{
+					Ctx:                   context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
+					Client:                b.Client,
+					BotClient:             b,
+					JadibotSessionManager: b.JadibotSessionManager,
+					Sender:                evt.Info.Sender,
+					Chat:                  evt.Info.Chat,
+					PushName:              evt.Info.PushName,
+					IsGroup:               evt.Info.IsGroup,
+					IsOwner:               isOwner,
+					Message:               msg,
+					Args:                  strings.Fields(msg),
+					MessageID:             evt.Info.ID,
+					EphemeralWrapper: func(ctx context.Context, jid types.JID, message *waE2E.Message) (*waE2E.Message, error) {
+						if b.EphemeralHelper != nil {
+							return b.EphemeralHelper.WrapMessageWithEphemeral(ctx, jid, message)
+						}
+						return message, nil
+					},
+				}
+
+				if err := handler(cmdCtx); err != nil {
+					b.Logger.Error("Keyword AI error: %v", err)
+				}
+				return
+			}
+		}
+	}
+
 	if cmd == "" {
 		return
 	}
@@ -464,49 +511,7 @@ func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, 
 }
 
 
-func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool) (string, []string) {
-
-	if isOwner {
-
-		b.mu.RLock()
-		prefixes := b.Prefixes
-		b.mu.RUnlock()
-
-
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(msg, prefix) {
-				msg = strings.TrimPrefix(msg, prefix)
-				parts := strings.Fields(msg)
-				if len(parts) == 0 {
-					return "", nil
-				}
-				cmd := strings.ToLower(parts[0])
-				var args []string
-				if len(parts) > 1 {
-					args = parts[1:]
-				}
-				return cmd, args
-			}
-		}
-
-
-		if strings.HasPrefix(msg, "$") {
-			return "", nil
-		}
-
-
-		parts := strings.Fields(msg)
-		if len(parts) == 0 {
-			return "", nil
-		}
-		cmd := strings.ToLower(parts[0])
-		var args []string
-		if len(parts) > 1 {
-			args = parts[1:]
-		}
-		return cmd, args
-	}
-
+func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool, forcePrefix bool) (string, []string) {
 
 	b.mu.RLock()
 	prefixes := b.Prefixes
@@ -527,6 +532,26 @@ func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool) (string, []s
 			}
 			return cmd, args
 		}
+	}
+
+
+	if isOwner && !forcePrefix {
+
+		if strings.HasPrefix(msg, "$") {
+			return "", nil
+		}
+
+
+		parts := strings.Fields(msg)
+		if len(parts) == 0 {
+			return "", nil
+		}
+		cmd := strings.ToLower(parts[0])
+		var args []string
+		if len(parts) > 1 {
+			args = parts[1:]
+		}
+		return cmd, args
 	}
 
 	return "", nil
@@ -569,6 +594,13 @@ func (b *BotClient) isOwner(jid types.JID) bool {
 	defer b.mu.RUnlock()
 
 
+	if b.Client != nil && b.Client.Store != nil && b.Client.Store.ID != nil {
+		if jid.User == b.Client.Store.ID.User {
+			return true
+		}
+	}
+
+
 	if b.Owners[jid.String()] {
 		return true
 	}
@@ -576,6 +608,18 @@ func (b *BotClient) isOwner(jid types.JID) bool {
 
 	if b.Owners[jid.User] {
 		return true
+	}
+
+
+	if b.IsMainBot && b.DBManager != nil {
+		jadibots, err := b.DBManager.GetActiveJadibot()
+		if err == nil {
+			for _, bot := range jadibots {
+				if bot.PhoneNumber == jid.User || bot.PhoneNumber == jid.String() {
+					return true
+				}
+			}
+		}
 	}
 
 	return false

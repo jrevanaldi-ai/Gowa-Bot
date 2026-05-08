@@ -30,7 +30,6 @@ type JadibotInstance struct {
 type JadibotSessionManager struct {
 	DBManager     *DatabaseManager
 	Registry      *lib.CommandRegistry
-	OwnerNumbers  []string
 	ClientFactory func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface
 	ActiveBots    map[string]*JadibotInstance
 	Logger        *Logger
@@ -55,13 +54,6 @@ func (m *JadibotSessionManager) SetRegistry(registry *lib.CommandRegistry) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.Registry = registry
-}
-
-
-func (m *JadibotSessionManager) SetOwnerNumbers(owners []string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.OwnerNumbers = owners
 }
 
 
@@ -145,7 +137,7 @@ func (m *JadibotSessionManager) StartJadibot(ctx context.Context, jadibotID stri
 	}
 
 
-	jadibotBotClient := m.ClientFactory(m.Registry, m.OwnerNumbers, cli)
+	jadibotBotClient := m.ClientFactory(m.Registry, []string{}, cli)
 
 
 	if cli.Store.ID != nil {
@@ -391,7 +383,7 @@ func (m *JadibotSessionManager) ResumeJadibot(ctx context.Context, jadibotID str
 	}
 
 
-	jadibotBotClient := m.ClientFactory(m.Registry, m.OwnerNumbers, cli)
+	jadibotBotClient := m.ClientFactory(m.Registry, []string{}, cli)
 
 
 	if err := m.DBManager.UpdateJadibotStatus(jadibotID, StatusActive); err != nil {

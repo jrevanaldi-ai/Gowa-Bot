@@ -15,6 +15,7 @@ type BotClientInterface interface {
 	EventHandler(evt any)
 	SetClient(client *gowa.Client)
 	GetDBManager() interface{}
+	GetCache() interface{}
 	SetPrefixes(prefixes []string)
 	GetPrefixes() []string
 }
@@ -146,6 +147,12 @@ func (r *CommandRegistry) GetCommand(cmd string) (*CommandMetadata, bool) {
 func (r *CommandRegistry) GetHandler(cmd string) (CommandHandler, bool) {
 	handler, ok := r.handlers[cmd]
 	return handler, ok
+}
+
+
+func (r *CommandRegistry) IsCommand(cmd string) bool {
+	_, ok := r.commands[cmd]
+	return ok
 }
 
 

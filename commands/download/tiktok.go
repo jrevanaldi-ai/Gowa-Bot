@@ -31,11 +31,9 @@ var TikTokMetadata = &lib.CommandMetadata{
 
 
 type TikTokResponse struct {
-	Creator string       `json:"creator"`
-	Source  string       `json:"source"`
-	Status  bool         `json:"status"`
-	Message string       `json:"message"`
-	Data    TikTokData   `json:"data"`
+	Status  bool       `json:"status"`
+	Result  TikTokData `json:"result"`
+	Message string     `json:"message"`
 }
 
 
@@ -62,7 +60,7 @@ func TikTokHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	ttURL := joinStrings(ctx.Args, " ")
+	ttURL := strings.Join(ctx.Args, " ")
 
 
 	apiURL := "https://api.azbry.com/api/download/tiktok?url=" + url.QueryEscape(ttURL)
@@ -78,7 +76,7 @@ func TikTokHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	if !ttResp.Status || len(ttResp.Data.Links) == 0 {
+	if !ttResp.Status || len(ttResp.Result.Links) == 0 {
 		errorMsg := "❌ *Gagal download!*\n\n" +
 			"┌─⦿ *Info*\n" +
 			fmt.Sprintf("│ • %s\n", ttResp.Message) +
@@ -131,12 +129,8 @@ func fetchTikTokAPI(apiURL string) (*TikTokResponse, error) {
 
 
 func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
-	videoURL := data.Data.Links[0]
 
-
-	videoURL = strings.TrimPrefix(videoURL, "https://tikwm.com")
-	videoURL = strings.TrimPrefix(videoURL, "http://tikwm.com")
-	videoURL = strings.TrimSpace(videoURL)
+	videoURL := data.Result.Links[0]
 
 
 	if !strings.HasPrefix(videoURL, "http://") && !strings.HasPrefix(videoURL, "https://") {
@@ -167,37 +161,37 @@ func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 	showAd := true
 	renderLarge := true
 
-	title := data.Data.Title
+	title := data.Result.Title
 	if title == "" {
 		title = "TikTok Video"
 	}
 
-	author := data.Data.Author
+	author := data.Result.Author
 	if author == "" {
 		author = "Unknown"
 	}
 
-	caption := fmt.Sprintf("🎵 %s\n\n👤 %s", title, author)
+	caption := fmt.Sprintf("🎵 %s\n👤 %s", title, author)
 
 	videoMsg := &waE2E.Message{
 		VideoMessage: &waE2E.VideoMessage{
-			URL:           proto.String(uploadResp.URL),
-			DirectPath:    proto.String(uploadResp.DirectPath),
-			Mimetype:      proto.String("video/mp4"),
-			Caption:       proto.String(caption),
-			FileSHA256:    uploadResp.FileSHA256,
-			FileEncSHA256: uploadResp.FileEncSHA256,
-			FileLength:    proto.Uint64(uploadResp.FileLength),
-			MediaKey:      uploadResp.MediaKey,
+			URL:               proto.String(uploadResp.URL),
+			DirectPath:        proto.String(uploadResp.DirectPath),
+			Mimetype:          proto.String("video/mp4"),
+			Caption:           proto.String(caption),
+			FileSHA256:        uploadResp.FileSHA256,
+			FileEncSHA256:     uploadResp.FileEncSHA256,
+			FileLength:        proto.Uint64(uploadResp.FileLength),
+			MediaKey:          uploadResp.MediaKey,
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
-			Seconds:       proto.Uint32(0),
-			GifPlayback:   proto.Bool(false),
+			Seconds:           proto.Uint32(0),
+			GifPlayback:       proto.Bool(false),
 			ContextInfo: &waE2E.ContextInfo{
 				ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
 					Title:                 proto.String("TikTok Video"),
 					Body:                  proto.String(author),
 					MediaType:             &mediaType,
-					ThumbnailURL:          &data.Data.Thumbnail,
+					ThumbnailURL:          &data.Result.Thumbnail,
 					ShowAdAttribution:     &showAd,
 					RenderLargerThumbnail: &renderLarge,
 					AdType:                &adType,

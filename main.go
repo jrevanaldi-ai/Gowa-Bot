@@ -33,6 +33,7 @@ var (
 	dbPath   = flag.String("db", "gowa-bot.db", "Path ke database file")
 	selfMode = flag.Bool("self", false, "Self mode - bot merespon pesan dari diri sendiri")
 	mustikaPayAPIKey = flag.String("mustika-api-key", "", "MustikaPay API Key untuk pembayaran")
+	aiAPIKey = flag.String("ai-api-key", "", "API Key untuk AI (Claude)")
 )
 
 func main() {
@@ -73,17 +74,27 @@ func main() {
 		logger.Info("MustikaPay payment integration enabled")
 	}
 
+	if *aiAPIKey == "" {
+		*aiAPIKey = os.Getenv("GOWA_BOT_AI_API_KEY")
+	}
+
+	if *aiAPIKey != "" {
+		aiSvc := helper.NewAIService(*aiAPIKey, "", "", "", registry, nil, nil, nil, nil)
+		general.SetAIService(aiSvc)
+		logger.Info("AI service (Claude) enabled")
+	}
 
 	gowaLog := &formatLogger{logger: logger}
 
 
 	clientFactory := func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface {
 		botClient := client.NewBotClient(registry, &client.BotConfig{
-			Owners:      owners,
+			Owners:      []string{}, // Jadibot tidak memiliki owner
 			Prefixes:    []string{"."},
 			MaxWorkers:  10,
 			EnableCache: true,
 			SelfMode:    false,
+			IsMainBot:   false,
 			DBManager:   dbManager,
 		})
 		botClient.SetClient(gowaClient)
@@ -91,7 +102,6 @@ func main() {
 	}
 
 	jadibotSessionManager := helper.NewJadibotSessionManager(dbManager, registry, gowaLog, logger, clientFactory)
-	jadibotSessionManager.SetOwnerNumbers(getOwnerNumbers())
 
 
 	logger.Info("Resuming active jadibots...")
@@ -115,6 +125,7 @@ func main() {
 		MaxWorkers:            10,
 		EnableCache:           true,
 		SelfMode:              *selfMode,
+		IsMainBot:             true,
 		JadibotSessionManager: jadibotSessionManager,
 		DBManager:             dbManager,
 	})
@@ -133,6 +144,8 @@ func main() {
 	botClient.SetClient(cli)
 
 	logger.Success("Gowa-Bot is ready!")
+
+
 	logger.Info("Press Ctrl+C to stop")
 
 
@@ -158,13 +171,6 @@ func registerCommands(registry *lib.CommandRegistry) {
 
 	registry.Register(utility.PingMetadata, utility.PingHandler)
 
-
-	registry.Register(utility.FetchMetadata, utility.FetchHandler)
-
-
-	registry.Register(utility.ThumbnailMetadata, utility.ThumbnailHandler)
-
-
 	registry.Register(general.MenuMetadata, general.MenuHandler)
 
 
@@ -177,11 +183,14 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(general.DonasiMetadata, general.DonasiHandler)
 	registry.Register(general.CekDonasiMetadata, general.CekDonasiHandler)
 
+	registry.Register(general.LuneMetadata, general.LuneHandler)
+
 
 	registry.Register(debug.CheckEphemeralMetadata, debug.CheckEphemeralHandler)
 
 
 	registry.Register(owner.ExecMetadata, owner.ExecHandler)
+	registry.Register(owner.EvalMetadata, owner.EvalHandler)
 
 
 	registry.Register(owner.SetmodeMetadata, owner.SetmodeHandler)
