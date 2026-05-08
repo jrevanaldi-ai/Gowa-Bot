@@ -70,9 +70,6 @@ func GitHubHandler(ctx *lib.CommandContext) error {
 	user := parts[1]
 	repo := parts[2]
 
-	// Notify user
-	_, _ = ctx.SendMessage(helper.CreateSimpleReply("⏳ *Sedang memproses repository...*", ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
-
 	// 1. Fetch Repo Info
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s", user, repo)
 	repoInfo, err := fetchGitHubRepoInfo(apiURL)
