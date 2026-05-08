@@ -196,6 +196,8 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(download.SpotifyMetadata, download.SpotifyHandler)
 
 	registry.Register(download.InstagramMetadata, download.InstagramHandler)
+	registry.Register(download.GitHubMetadata, download.GitHubHandler)
+
 
 	registry.Register(download.TikTokMetadata, download.TikTokHandler)
 
