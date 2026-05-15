@@ -20,14 +20,14 @@ var BangroupMetadata = &lib.CommandMetadata{
 func BangroupHandler(ctx *lib.CommandContext) error {
 
 	if !ctx.IsOwner {
-		message := "❌ Command ini hanya untuk owner!"
+		message := "Command ini hanya untuk owner."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 
 	if !ctx.IsGroup {
-		message := "❌ Command ini hanya bisa digunakan di grup!"
+		message := "Command ini hanya bisa digunakan di grup."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -48,7 +48,7 @@ func BangroupHandler(ctx *lib.CommandContext) error {
 	}
 
 	if isBanned {
-		message := "❌ Grup ini sudah di-banned!"
+		message := "Grup ini sudah di-banned."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -67,11 +67,11 @@ func BangroupHandler(ctx *lib.CommandContext) error {
 
 
 	message := fmt.Sprintf(
-		"*✅ Grup Di-Banned*\n\n"+
-			"📛 *Grup:* %s\n"+
-			"📝 *Alasan:* %s\n\n"+
+		"Grup di-banned.\n\n"+
+			"Grup: %s\n"+
+			"Alasan: %s\n\n"+
 			"Bot tidak akan merespon command dari grup ini.\n"+
-			"Gunakan `.unbangroup` untuk membuka ban.",
+			"Gunakan .unbangroup untuk membuka ban.",
 		ctx.Chat.String(),
 		reason,
 	)
@@ -94,14 +94,14 @@ var UnbangroupMetadata = &lib.CommandMetadata{
 func UnbangroupHandler(ctx *lib.CommandContext) error {
 
 	if !ctx.IsOwner {
-		message := "❌ Command ini hanya untuk owner!"
+		message := "Command ini hanya untuk owner."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 
 	if !ctx.IsGroup {
-		message := "❌ Command ini hanya bisa digunakan di grup!"
+		message := "Command ini hanya bisa digunakan di grup."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -122,7 +122,7 @@ func UnbangroupHandler(ctx *lib.CommandContext) error {
 	}
 
 	if !isBanned {
-		message := "❌ Grup ini tidak sedang di-banned!"
+		message := "Grup ini tidak sedang di-banned."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -135,8 +135,8 @@ func UnbangroupHandler(ctx *lib.CommandContext) error {
 
 
 	message := fmt.Sprintf(
-		"*✅ Grup Di-Unbanned*\n\n"+
-			"📛 *Grup:* %s\n\n"+
+		"Grup di-unbanned.\n\n"+
+			"Grup: %s\n\n"+
 			"Bot sekarang akan merespon command dari grup ini.",
 		ctx.Chat.String(),
 	)

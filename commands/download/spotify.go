@@ -52,41 +52,49 @@ type SpotifyTrack struct {
 
 func SpotifyHandler(ctx *lib.CommandContext) error {
 
-	if len(ctx.Args) == 0 {
-		message := "❌ *Masukkan judul lagu!*\n\n" +
-			"┌─⦿ *Usage*\n" +
-			"│ • `.sp <judul>` - Cari dan download dari Spotify\n" +
-			"└──────────────\n\n" +
-			"*📝 Contoh:*\n" +
-			"• `.sp Multo Cup of Joe`\n" +
-			"• `.sp Wonderwall Oasis`"
+	var query string
+	if len(ctx.Args) > 0 {
+		query = joinStrings(ctx.Args, " ")
+	} else if ctx.ReplyMessage != nil {
+		query = helper.ExtractMatchingURL(ctx.ReplyMessage.Message, helper.IsSpotifyURL)
+	}
+
+	if query == "" {
+		message := "Masukkan judul lagu.\n\n" +
+			"Usage:\n" +
+			"- .sp <judul> - Cari dan download dari Spotify\n" +
+			"- Atau reply pesan berisi link Spotify dengan .sp\n\n" +
+			"Contoh:\n" +
+			"- .sp Multo Cup of Joe\n" +
+			"- .sp https://open.spotify.com/track/xxxx"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-
-	query := joinStrings(ctx.Args, " ")
-
+	if helper.LooksLikeURL(query) && !helper.IsSpotifyURL(query) {
+		message := "URL Spotify tidak valid.\n\n" +
+			"- Pakai link open.spotify.com/track/...\n" +
+			"- Atau cari pakai keyword\n" +
+			"- Contoh: .spotify https://open.spotify.com/track/xxxx"
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return err
+	}
 
 	apiURL := "https://api.azbry.com/api/download/spoplay?q=" + url.QueryEscape(query)
 
 	spResp, err := fetchSpotifyAPI(apiURL)
 	if err != nil {
-		errorMsg := "❌ *Gagal mengambil data!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal mengambil data.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
 
 
 	if !spResp.Status || spResp.Result.DownloadLink == "" {
-		errorMsg := "❌ *Lagu tidak ditemukan!*\n\n" +
-			"┌─⦿ *Info*\n" +
-			"│ • Coba dengan kata kunci lain\n" +
-			"│ • Pastikan judul benar\n" +
-			"└──────────────"
+		errorMsg := "Lagu tidak ditemukan.\n\n" +
+			"- Coba dengan kata kunci lain\n" +
+			"- Pastikan judul benar"
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -144,11 +152,9 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 
 
 	sendMsg := fmt.Sprintf(
-		"⏳ *Downloading audio...*\n\n"+
-			"┌─⦿ *Info*\n"+
-			"│ • Title: %s\n"+
-			"│ • Artist: %s\n"+
-			"└──────────────",
+		"Downloading audio...\n\n"+
+			"Title: %s\n"+
+			"Artist: %s",
 		result.Title,
 		result.Artist,
 	)
@@ -157,10 +163,8 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 
 	audioData, err := downloadFileFast(downloadURL)
 	if err != nil {
-		errorMsg := "❌ *Gagal download audio!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal download audio.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}

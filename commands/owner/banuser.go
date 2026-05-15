@@ -21,17 +21,17 @@ var BanuserMetadata = &lib.CommandMetadata{
 func BanuserHandler(ctx *lib.CommandContext) error {
 
 	if !ctx.IsOwner {
-		message := "❌ Command ini hanya untuk owner!"
+		message := "Command ini hanya untuk owner."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 
 	if len(ctx.Args) == 0 {
-		message := "*📋 Ban User*\n\n" +
+		message := "Ban User\n\n" +
 			"Usage:\n" +
-			"• `.banuser 6281234567890` - Ban user berdasarkan nomor\n" +
-			"• `.banuser 6281234567890 alasan spam` - Ban dengan alasan"
+			"- .banuser 6281234567890 - Ban user berdasarkan nomor\n" +
+			"- .banuser 6281234567890 alasan spam - Ban dengan alasan"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -57,7 +57,7 @@ func BanuserHandler(ctx *lib.CommandContext) error {
 	}
 
 	if isBanned {
-		message := "❌ User ini sudah di-banned!"
+		message := "User ini sudah di-banned."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -76,11 +76,11 @@ func BanuserHandler(ctx *lib.CommandContext) error {
 
 
 	message := fmt.Sprintf(
-		"*✅ User Di-Banned*\n\n"+
-			"👤 *User:* %s\n"+
-			"📝 *Alasan:* %s\n\n"+
+		"User di-banned.\n\n"+
+			"User: %s\n"+
+			"Alasan: %s\n\n"+
 			"User ini tidak bisa menggunakan command bot.\n"+
-			"Gunakan `.unbanuser` untuk membuka ban.",
+			"Gunakan .unbanuser untuk membuka ban.",
 		targetJID,
 		reason,
 	)
@@ -103,16 +103,16 @@ var UnbanuserMetadata = &lib.CommandMetadata{
 func UnbanuserHandler(ctx *lib.CommandContext) error {
 
 	if !ctx.IsOwner {
-		message := "❌ Command ini hanya untuk owner!"
+		message := "Command ini hanya untuk owner."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 
 	if len(ctx.Args) == 0 {
-		message := "*📋 Unban User*\n\n" +
+		message := "Unban User\n\n" +
 			"Usage:\n" +
-			"• `.unbanuser 6281234567890` - Unban user berdasarkan nomor"
+			"- .unbanuser 6281234567890 - Unban user berdasarkan nomor"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -138,7 +138,7 @@ func UnbanuserHandler(ctx *lib.CommandContext) error {
 	}
 
 	if !isBanned {
-		message := "❌ User ini tidak sedang di-banned!"
+		message := "User ini tidak sedang di-banned."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -151,8 +151,8 @@ func UnbanuserHandler(ctx *lib.CommandContext) error {
 
 
 	message := fmt.Sprintf(
-		"*✅ User Di-Unbanned*\n\n"+
-			"👤 *User:* %s\n\n"+
+		"User di-unbanned.\n\n"+
+			"User: %s\n\n"+
 			"User ini sekarang bisa menggunakan command bot.",
 		targetJID,
 	)

@@ -23,17 +23,17 @@ var SetmodeMetadata = &lib.CommandMetadata{
 func SetmodeHandler(ctx *lib.CommandContext) error {
 
 	if !ctx.IsOwner {
-		message := "❌ Command ini hanya untuk owner!"
+		message := "Command ini hanya untuk owner."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 
 	if len(ctx.Args) == 0 {
-		message := "*📋 Mode Bot*\n\n" +
+		message := "Mode Bot\n\n" +
 			"Usage:\n" +
-			"• `.setmode self` - Aktifkan self mode\n" +
-			"• `.setmode public` - Aktifkan public mode"
+			"- .setmode self - Aktifkan self mode\n" +
+			"- .setmode public - Aktifkan public mode"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -52,10 +52,10 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 		newMode = false
 		modeName = "Public Mode"
 	default:
-		message := "❌ Mode tidak valid!\n\n" +
+		message := "Mode tidak valid.\n\n" +
 			"Gunakan:\n" +
-			"• `self` - untuk self mode\n" +
-			"• `public` - untuk public mode"
+			"- self - untuk self mode\n" +
+			"- public - untuk public mode"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -66,10 +66,10 @@ func SetmodeHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	message := fmt.Sprintf("*✅ %s Aktif*\n\n"+
+	message := fmt.Sprintf("%s aktif.\n\n"+
 		"Usage:\n"+
-		"• `.setmode self` - Aktifkan self mode\n"+
-		"• `.setmode public` - Aktifkan public mode", modeName)
+		"- .setmode self - Aktifkan self mode\n"+
+		"- .setmode public - Aktifkan public mode", modeName)
 
 	_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err

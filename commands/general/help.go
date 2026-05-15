@@ -37,7 +37,7 @@ func HelpHandler(ctx *lib.CommandContext) error {
 	cmdName := ctx.Args[0]
 	meta, found := registry.GetCommand(cmdName)
 	if !found {
-		message := fmt.Sprintf("❌ Command *%s* tidak ditemukan!\n\n"+
+		message := fmt.Sprintf("Command %s tidak ditemukan.\n\n"+
 			"Gunakan .menu untuk melihat daftar command yang tersedia.", cmdName)
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
@@ -50,38 +50,34 @@ func HelpHandler(ctx *lib.CommandContext) error {
 
 
 	var helpBuilder strings.Builder
-	helpBuilder.WriteString(fmt.Sprintf("*╭──⦿ HELP: %s ⦿*\n", strings.ToUpper(meta.Cmd)))
-	helpBuilder.WriteString(fmt.Sprintf("│\n"))
+	helpBuilder.WriteString(fmt.Sprintf("HELP: %s\n\n", strings.ToUpper(meta.Cmd)))
 
 
-	helpBuilder.WriteString(fmt.Sprintf("│  *Category:* %s\n", formatTag(meta.Tag)))
+	helpBuilder.WriteString(fmt.Sprintf("Category: %s\n", formatTag(meta.Tag)))
 
 
-	helpBuilder.WriteString(fmt.Sprintf("│  *Description:* %s\n", meta.Desc))
+	helpBuilder.WriteString(fmt.Sprintf("Description: %s\n", meta.Desc))
 
 
-	helpBuilder.WriteString(fmt.Sprintf("│  *Command:* .%s\n", meta.Cmd))
+	helpBuilder.WriteString(fmt.Sprintf("Command: .%s\n", meta.Cmd))
 
 
 	if len(meta.Alias) > 0 {
 		aliases := strings.Join(meta.Alias, ", ")
-		helpBuilder.WriteString(fmt.Sprintf("│  *Aliases:* .%s\n", aliases))
+		helpBuilder.WriteString(fmt.Sprintf("Aliases: .%s\n", aliases))
 	}
 
 
 	if meta.Example != "" {
-		helpBuilder.WriteString(fmt.Sprintf("│  *Example:* %s\n", meta.Example))
+		helpBuilder.WriteString(fmt.Sprintf("Example: %s\n", meta.Example))
 	}
 
 
 	if meta.OwnerOnly {
-		helpBuilder.WriteString(fmt.Sprintf("│  *Access:* Owner Only 🔒\n"))
+		helpBuilder.WriteString("Access: Owner Only\n")
 	} else {
-		helpBuilder.WriteString(fmt.Sprintf("│  *Access:* Public\n"))
+		helpBuilder.WriteString("Access: Public\n")
 	}
-
-	helpBuilder.WriteString(fmt.Sprintf("│\n"))
-	helpBuilder.WriteString(fmt.Sprintf("╰──────────────────────\n"))
 
 	message := helpBuilder.String()
 

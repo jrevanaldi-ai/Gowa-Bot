@@ -21,7 +21,7 @@ var SetprefixMetadata = &lib.CommandMetadata{
 func SetprefixHandler(ctx *lib.CommandContext) error {
 
 	if !ctx.IsOwner {
-		message := "❌ Command ini hanya untuk owner!"
+		message := "Command ini hanya untuk owner."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -33,16 +33,15 @@ func SetprefixHandler(ctx *lib.CommandContext) error {
 
 		prefixList := strings.Join(currentPrefixes, ", ")
 		message := fmt.Sprintf(
-			"*📋 Prefix Bot Saat Ini*\n\n"+
-				"┌─⦿ *Active Prefixes*\n"+
-				"│ • %s\n"+
-				"└──────────────\n\n"+
-				"*📝 Usage:*\n"+
-				"• `.setprefix .` - Set satu prefix\n"+
-				"• `.setprefix . ! /` - Set multiple prefix\n\n"+
-				"*💡 Tips:*\n"+
-				"• Gunakan spasi untuk memisahkan prefix\n"+
-				"• Prefix yang didukung: . ! / # & dll",
+			"Prefix Bot Saat Ini\n\n"+
+				"Active Prefixes:\n"+
+				"- %s\n\n"+
+				"Usage:\n"+
+				"- .setprefix . - Set satu prefix\n"+
+				"- .setprefix . ! / - Set multiple prefix\n\n"+
+				"Tips:\n"+
+				"- Gunakan spasi untuk memisahkan prefix\n"+
+				"- Prefix yang didukung: . ! / # & dll",
 			prefixList,
 		)
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
@@ -55,7 +54,7 @@ func SetprefixHandler(ctx *lib.CommandContext) error {
 
 	for _, prefix := range newPrefixes {
 		if len(prefix) > 5 {
-			message := "❌ *Prefix terlalu panjang!*\n\n" +
+			message := "Prefix terlalu panjang.\n\n" +
 				"Maksimal 5 karakter per prefix."
 			_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 			return err
@@ -68,10 +67,9 @@ func SetprefixHandler(ctx *lib.CommandContext) error {
 
 	prefixList := strings.Join(newPrefixes, ", ")
 	message := fmt.Sprintf(
-		"*✅ Prefix Berhasil Diubah*\n\n"+
-			"┌─⦿ *New Prefixes*\n"+
-			"│ • %s\n"+
-			"└──────────────\n\n"+
+		"Prefix berhasil diubah.\n\n"+
+			"New Prefixes:\n"+
+			"- %s\n\n"+
 			"Sekarang bot akan merespon dengan salah satu prefix di atas.",
 		prefixList,
 	)

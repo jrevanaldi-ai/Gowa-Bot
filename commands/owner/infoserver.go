@@ -31,7 +31,7 @@ var InfoserverMetadata = &lib.CommandMetadata{
 
 func InfoserverHandler(ctx *lib.CommandContext) error {
 
-	loadingMsg := "🔄 *Fetching server information...*\n\n_Mohon tunggu sebentar..._"
+	loadingMsg := "Fetching server information...\n\nMohon tunggu sebentar..."
 
 
 	sentResp, err := ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
@@ -81,69 +81,65 @@ func InfoserverHandler(ctx *lib.CommandContext) error {
 func collectServerInfo() string {
 	var info strings.Builder
 
-	info.WriteString("*╭───⦿ SERVER INFO ⦿───*\n")
-	info.WriteString("│\n")
+	info.WriteString("SERVER INFO\n\n")
 
 
-	info.WriteString("┌─⦿ *System Information*\n")
-	info.WriteString(fmt.Sprintf("│ • *OS:* %s\n", getOSInfo()))
-	info.WriteString(fmt.Sprintf("│ • *Architecture:* %s\n", runtime.GOARCH))
-	info.WriteString(fmt.Sprintf("│ • *Uptime:* %s\n", getSystemUptime()))
-	info.WriteString(fmt.Sprintf("│ • *Server Time:* %s\n", time.Now().Format("15:04:05 MST")))
-	info.WriteString(fmt.Sprintf("│ • *Date:* %s\n", time.Now().Format("2006-01-02")))
+	info.WriteString("System Information:\n")
+	info.WriteString(fmt.Sprintf("- OS: %s\n", getOSInfo()))
+	info.WriteString(fmt.Sprintf("- Architecture: %s\n", runtime.GOARCH))
+	info.WriteString(fmt.Sprintf("- Uptime: %s\n", getSystemUptime()))
+	info.WriteString(fmt.Sprintf("- Server Time: %s\n", time.Now().Format("15:04:05 MST")))
+	info.WriteString(fmt.Sprintf("- Date: %s\n", time.Now().Format("2006-01-02")))
 	if runtime.GOOS == "linux" {
-		info.WriteString(fmt.Sprintf("│ • *Load Avg:* %s\n", getLoadAverage()))
+		info.WriteString(fmt.Sprintf("- Load Avg: %s\n", getLoadAverage()))
 	}
-	info.WriteString("└──────────────\n\n")
+	info.WriteString("\n")
 
 
-	info.WriteString("┌─⦿ *CPU Information*\n")
-	info.WriteString(fmt.Sprintf("│ • *Model:* %s\n", getCPUModel()))
-	info.WriteString(fmt.Sprintf("│ • *Cores:* %d\n", runtime.NumCPU()))
-	info.WriteString(fmt.Sprintf("│ • *Usage:* %s\n", getCPUUsage()))
-	info.WriteString("└──────────────\n\n")
+	info.WriteString("CPU Information:\n")
+	info.WriteString(fmt.Sprintf("- Model: %s\n", getCPUModel()))
+	info.WriteString(fmt.Sprintf("- Cores: %d\n", runtime.NumCPU()))
+	info.WriteString(fmt.Sprintf("- Usage: %s\n", getCPUUsage()))
+	info.WriteString("\n")
 
 
-	info.WriteString("┌─⦿ *Memory (RAM)*\n")
-	info.WriteString(fmt.Sprintf("│ • *Total:* %s\n", getTotalMemory()))
-	info.WriteString(fmt.Sprintf("│ • *Used:* %s\n", getUsedMemory()))
-	info.WriteString(fmt.Sprintf("│ • *Free:* %s\n", getFreeMemory()))
-	info.WriteString(fmt.Sprintf("│ • *Usage:* %s\n", getMemoryUsagePercent()))
-	info.WriteString("└──────────────\n\n")
+	info.WriteString("Memory (RAM):\n")
+	info.WriteString(fmt.Sprintf("- Total: %s\n", getTotalMemory()))
+	info.WriteString(fmt.Sprintf("- Used: %s\n", getUsedMemory()))
+	info.WriteString(fmt.Sprintf("- Free: %s\n", getFreeMemory()))
+	info.WriteString(fmt.Sprintf("- Usage: %s\n", getMemoryUsagePercent()))
+	info.WriteString("\n")
 
 
-	info.WriteString("┌─⦿ *Go Runtime*\n")
-	info.WriteString(fmt.Sprintf("│ • *Version:* %s\n", runtime.Version()))
-	info.WriteString(fmt.Sprintf("│ • *Goroutines:* %d\n", runtime.NumGoroutine()))
-	info.WriteString(fmt.Sprintf("│ • *GC Count:* %d\n", getGCCount()))
-	info.WriteString(fmt.Sprintf("│ • *Heap Used:* %s\n", getGoMemory()))
-	info.WriteString(fmt.Sprintf("│ • *Heap Total:* %s\n", getGoTotalMemory()))
-	info.WriteString(fmt.Sprintf("│ • *Process RSS:* %s\n", getProcessRSS()))
-	info.WriteString("└──────────────\n\n")
+	info.WriteString("Go Runtime:\n")
+	info.WriteString(fmt.Sprintf("- Version: %s\n", runtime.Version()))
+	info.WriteString(fmt.Sprintf("- Goroutines: %d\n", runtime.NumGoroutine()))
+	info.WriteString(fmt.Sprintf("- GC Count: %d\n", getGCCount()))
+	info.WriteString(fmt.Sprintf("- Heap Used: %s\n", getGoMemory()))
+	info.WriteString(fmt.Sprintf("- Heap Total: %s\n", getGoTotalMemory()))
+	info.WriteString(fmt.Sprintf("- Process RSS: %s\n", getProcessRSS()))
+	info.WriteString("\n")
 
 
-	info.WriteString("┌─⦿ *Disk Usage*\n")
-	info.WriteString(fmt.Sprintf("│ • *Total:* %s\n", getDiskTotal()))
-	info.WriteString(fmt.Sprintf("│ • *Used:* %s\n", getDiskUsed()))
-	info.WriteString(fmt.Sprintf("│ • *Free:* %s\n", getDiskFree()))
-	info.WriteString(fmt.Sprintf("│ • *Usage:* %s\n", getDiskUsagePercent()))
-	info.WriteString("└──────────────\n\n")
+	info.WriteString("Disk Usage:\n")
+	info.WriteString(fmt.Sprintf("- Total: %s\n", getDiskTotal()))
+	info.WriteString(fmt.Sprintf("- Used: %s\n", getDiskUsed()))
+	info.WriteString(fmt.Sprintf("- Free: %s\n", getDiskFree()))
+	info.WriteString(fmt.Sprintf("- Usage: %s\n", getDiskUsagePercent()))
+	info.WriteString("\n")
 
 
-	info.WriteString("┌─⦿ *Bot Information*\n")
-	info.WriteString(fmt.Sprintf("│ • *Uptime:* %s\n", getBotUptime()))
-	info.WriteString(fmt.Sprintf("│ • *Start Time:* %s\n", getBotStartTime()))
-	info.WriteString(fmt.Sprintf("│ • *GOMAXPROCS:* %d\n", runtime.GOMAXPROCS(0)))
-	info.WriteString("└──────────────\n\n")
+	info.WriteString("Bot Information:\n")
+	info.WriteString(fmt.Sprintf("- Uptime: %s\n", getBotUptime()))
+	info.WriteString(fmt.Sprintf("- Start Time: %s\n", getBotStartTime()))
+	info.WriteString(fmt.Sprintf("- GOMAXPROCS: %d\n", runtime.GOMAXPROCS(0)))
+	info.WriteString("\n")
 
 
-	info.WriteString("┌─⦿ *Process*\n")
-	info.WriteString(fmt.Sprintf("│ • *PID:* %d\n", os.Getpid()))
-	info.WriteString(fmt.Sprintf("│ • *NumCPU:* %d\n", runtime.NumCPU()))
-	info.WriteString(fmt.Sprintf("│ • *Threads:* %d\n", getThreadCount()))
-	info.WriteString("└──────────────\n\n")
-
-	info.WriteString("╰────────────────\n")
+	info.WriteString("Process:\n")
+	info.WriteString(fmt.Sprintf("- PID: %d\n", os.Getpid()))
+	info.WriteString(fmt.Sprintf("- NumCPU: %d\n", runtime.NumCPU()))
+	info.WriteString(fmt.Sprintf("- Threads: %d\n", getThreadCount()))
 
 	return info.String()
 }
@@ -153,11 +149,11 @@ func collectServerInfo() string {
 func getOSInfo() string {
 	switch runtime.GOOS {
 	case "linux":
-		return "🐧 Linux"
+		return "Linux"
 	case "windows":
-		return "🪟 Windows"
+		return "Windows"
 	case "darwin":
-		return "🍎 macOS"
+		return "macOS"
 	default:
 		return runtime.GOOS
 	}

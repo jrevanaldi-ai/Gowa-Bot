@@ -26,12 +26,10 @@ var PingMetadata = &lib.CommandMetadata{
 
 func PingHandler(ctx *lib.CommandContext) error {
 
-	message := fmt.Sprintf("*🏓 Pong!*\n\n"+
-		"┌─⦿ *Info Bot*\n"+
-		"│ • *Latency:* calculating...\n"+
-		"│ • *Status:* Online ✓\n"+
-		"│ • *Uptime:* %s\n"+
-		"└──────────────",
+	message := fmt.Sprintf("Pong\n\n"+
+		"Latency: calculating...\n"+
+		"Status: Online\n"+
+		"Uptime: %s",
 		getUptime())
 
 
@@ -62,12 +60,10 @@ func PingHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	updatedMessage := fmt.Sprintf("*🏓 Pong!*\n\n"+
-		"┌─⦿ *Info Bot*\n"+
-		"│ • *Latency:* %d ms\n"+
-		"│ • *Status:* Online ✓\n"+
-		"│ • *Uptime:* %s\n"+
-		"└──────────────",
+	updatedMessage := fmt.Sprintf("Pong\n\n"+
+		"Latency: %d ms\n"+
+		"Status: Online\n"+
+		"Uptime: %s",
 		latency,
 		getUptime())
 

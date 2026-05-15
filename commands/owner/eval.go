@@ -27,15 +27,14 @@ func EvalHandler(ctx *lib.CommandContext) error {
 	}
 
 	if len(ctx.Args) == 0 {
-		message := "❌ *Masukkan kode Go!*\n\n" +
-			"┌─⦿ *Usage*\n" +
-			"│ • `>> <kode>`\n" +
-			"└──────────────\n" +
-			"*Variables tersedia:*\n" +
-			"• `ctx`: *lib.CommandContext\n" +
-			"• `c`: *gowa.Client\n" +
-			"• `db`: *helper.DatabaseManager\n" +
-			"• `m`: *events.Message (jika tersedia)"
+		message := "Masukkan kode Go.\n\n" +
+			"Usage:\n" +
+			"- >> <kode>\n\n" +
+			"Variables tersedia:\n" +
+			"- ctx: *lib.CommandContext\n" +
+			"- c: *gowa.Client\n" +
+			"- db: *helper.DatabaseManager\n" +
+			"- m: *events.Message (jika tersedia)"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -87,24 +86,24 @@ func Run() interface{} {
 
 	_, err := i.Eval(wrappedCode)
 	if err != nil {
-		errorMsg := fmt.Sprintf("❌ *Eval Error:*\n```\n%s\n```", err.Error())
+		errorMsg := fmt.Sprintf("Eval Error:\n%s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
 
 	v, err := i.Eval("main.Run()")
 	if err != nil {
-		errorMsg := fmt.Sprintf("❌ *Runtime Error:*\n```\n%s\n```", err.Error())
+		errorMsg := fmt.Sprintf("Runtime Error:\n%s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
 
 	result := fmt.Sprintf("%v", v.Interface())
 	if result == "<nil>" || result == "" {
-		result = "✓ Done (no return value)"
+		result = "Done (no return value)"
 	}
 
-	response := fmt.Sprintf("✅ *Eval Result:*\n```\n%s\n```", result)
+	response := fmt.Sprintf("Eval Result:\n%s", result)
 	_, err = ctx.SendMessage(helper.CreateSimpleReply(response, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }

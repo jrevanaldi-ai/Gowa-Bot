@@ -63,14 +63,13 @@ type TTSearchStats struct {
 func TTSearchHandler(ctx *lib.CommandContext) error {
 
 	if len(ctx.Args) == 0 {
-		message := "❌ *Masukkan kata kunci pencarian!*\n\n" +
-			"┌─⦿ *Usage*\n" +
-			"│ • `.tts <keyword>` - Cari video TikTok\n" +
-			"└──────────────\n\n" +
-			"*📝 Contoh:*\n" +
-			"• `.tts ayam`\n" +
-			"• `.tts resep mudah`\n" +
-			"• `.tts kucing lucu`"
+		message := "Masukkan kata kunci pencarian.\n\n" +
+			"Usage:\n" +
+			"- .tts <keyword> - Cari video TikTok\n\n" +
+			"Contoh:\n" +
+			"- .tts ayam\n" +
+			"- .tts resep mudah\n" +
+			"- .tts kucing lucu"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -83,20 +82,16 @@ func TTSearchHandler(ctx *lib.CommandContext) error {
 
 	searchResp, err := fetchTTSearchAPI(apiURL)
 	if err != nil {
-		errorMsg := "❌ *Gagal mengambil data!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal mengambil data.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
 
 
 	if !searchResp.Status || len(searchResp.Result) == 0 {
-		errorMsg := "❌ *Video tidak ditemukan!*\n\n" +
-			"┌─⦿ *Info*\n" +
-			"│ • Coba dengan kata kunci lain\n" +
-			"└──────────────"
+		errorMsg := "Video tidak ditemukan.\n\n" +
+			"- Coba dengan kata kunci lain"
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -158,10 +153,8 @@ func sendTTSearchVideo(ctx *lib.CommandContext, item TTSearchItem, index int, to
 
 	videoData, err := downloadFileFast(videoURL)
 	if err != nil {
-		errorMsg := "❌ *Gagal download video!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal download video.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -178,7 +171,7 @@ func sendTTSearchVideo(ctx *lib.CommandContext, item TTSearchItem, index int, to
 	views := formatNumber(item.Stats.Plays)
 	likes := formatNumber(item.Stats.Likes)
 
-	caption := fmt.Sprintf("🎵 %s\n\n👤 %s\n👁️ %s views | ❤️ %s likes", title, author, views, likes)
+	caption := fmt.Sprintf("%s\n\n%s\n%s views | %s likes", title, author, views, likes)
 
 
 	senderStr := ctx.Sender.String()

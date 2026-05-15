@@ -48,42 +48,50 @@ type PlayResponse struct {
 
 func PlayHandler(ctx *lib.CommandContext) error {
 
-	if len(ctx.Args) == 0 {
-		message := "❌ *Masukkan judul atau link YouTube!*\n\n" +
-			"┌─⦿ *Usage*\n" +
-			"│ • `.play <judul>` - Cari dan download audio\n" +
-			"│ • `.play <url>` - Download dari URL YouTube\n" +
-			"└──────────────\n\n" +
-			"*📝 Contoh:*\n" +
-			"• `.play Multo Cup of Joe`\n" +
-			"• `.play https://youtube.com/watch?v=xxxxx`"
+	var query string
+	if len(ctx.Args) > 0 {
+		query = joinStrings(ctx.Args, " ")
+	} else if ctx.ReplyMessage != nil {
+		query = helper.ExtractMatchingURL(ctx.ReplyMessage.Message, helper.IsYouTubeURL)
+	}
+
+	if query == "" {
+		message := "Masukkan judul atau link YouTube.\n\n" +
+			"Usage:\n" +
+			"- .play <judul> - Cari dan download audio\n" +
+			"- .play <url> - Download dari URL YouTube\n" +
+			"- Atau reply pesan berisi link YouTube dengan .play\n\n" +
+			"Contoh:\n" +
+			"- .play Multo Cup of Joe\n" +
+			"- .play https://youtube.com/watch?v=xxxxx"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-
-	query := joinStrings(ctx.Args, " ")
-
+	if helper.LooksLikeURL(query) && !helper.IsYouTubeURL(query) {
+		message := "URL YouTube tidak valid.\n\n" +
+			"- Pakai link youtube.com / youtu.be, atau cari pakai keyword\n" +
+			"- Contoh: .play https://youtu.be/xxxxx\n" +
+			"- Contoh: .play lagu galau"
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return err
+	}
 
 	apiURL := "https://api.azbry.com/api/download/ytplay2?q=" + url.QueryEscape(query)
 
 	playResp, err := fetchPlayAPI(apiURL)
 	if err != nil {
-		errorMsg := "❌ *Gagal mengambil data!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal mengambil data.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
 
 
 	if !playResp.Status {
-		errorMsg := "❌ *Audio tidak ditemukan!*\n\n" +
-			"┌─⦿ *Info*\n" +
-			"│ • Coba dengan kata kunci lain\n" +
-			"│ • Pastikan judul benar\n" +
-			"└──────────────"
+		errorMsg := "Audio tidak ditemukan.\n\n" +
+			"- Coba dengan kata kunci lain\n" +
+			"- Pastikan judul benar"
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -99,10 +107,8 @@ func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 
 	audioData, err := downloadFileFast(result.Download)
 	if err != nil {
-		errorMsg := "❌ *Gagal download audio!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal download audio.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}

@@ -44,16 +44,16 @@ func ExecHandler(ctx *lib.CommandContext) error {
 		if message == "" {
 			message = err.Error()
 		}
-		_, err := ctx.SendMessage(helper.CreateSimpleReply("❌ Error:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		_, err := ctx.SendMessage(helper.CreateSimpleReply("Error:\n"+message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 
 	message := string(output)
 	if message == "" {
-		message = "✓ Command executed successfully (no output)"
+		message = "Command executed successfully (no output)"
 	}
-	_, err = ctx.SendMessage(helper.CreateSimpleReply("✓ Output:\n```\n"+message+"```", ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+	_, err = ctx.SendMessage(helper.CreateSimpleReply("Output:\n"+message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	return err
 }
 

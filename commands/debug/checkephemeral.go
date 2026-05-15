@@ -23,7 +23,7 @@ var CheckEphemeralMetadata = &lib.CommandMetadata{
 func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 
 	if !ctx.IsGroup {
-		message := "❌ Command ini hanya bisa digunakan di group!"
+		message := "Command ini hanya bisa digunakan di group."
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -36,7 +36,7 @@ func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 
 	config, err := getEphemeralConfig(ctx)
 	if err != nil {
-		message := fmt.Sprintf("❌ Error: %v", err)
+		message := fmt.Sprintf("Error: %v", err)
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
@@ -45,21 +45,17 @@ func CheckEphemeralHandler(ctx *lib.CommandContext) error {
 	var message string
 	if config.IsEphemeral && config.DisappearingTimer > 0 {
 		timer := formatTimer(config.DisappearingTimer)
-		message = fmt.Sprintf("*✅ Ephemeral Status*\n\n"+
-			"┌─⦿ *Info Group*\n"+
-			"│ • *Group:* %s\n"+
-			"│ • *Ephemeral:* Enabled ✓\n"+
-			"│ • *Timer:* %s\n"+
-			"└──────────────",
+		message = fmt.Sprintf("Ephemeral Status\n\n"+
+			"Group: %s\n"+
+			"Ephemeral: Enabled\n"+
+			"Timer: %s",
 			ctx.Chat.String(),
 			timer)
 	} else {
-		message = fmt.Sprintf("*❌ Ephemeral Status*\n\n"+
-			"┌─⦿ *Info Group*\n"+
-			"│ • *Group:* %s\n"+
-			"│ • *Ephemeral:* Disabled ✗\n"+
-			"│ • *Timer:* Off\n"+
-			"└──────────────",
+		message = fmt.Sprintf("Ephemeral Status\n\n"+
+			"Group: %s\n"+
+			"Ephemeral: Disabled\n"+
+			"Timer: Off",
 			ctx.Chat.String())
 	}
 

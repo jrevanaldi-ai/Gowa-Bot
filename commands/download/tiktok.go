@@ -47,41 +47,48 @@ type TikTokData struct {
 
 func TikTokHandler(ctx *lib.CommandContext) error {
 
-	if len(ctx.Args) == 0 {
-		message := "❌ *Masukkan link TikTok!*\n\n" +
-			"┌─⦿ *Usage*\n" +
-			"│ • `.tt <url>` - Download dari TikTok\n" +
-			"└──────────────\n\n" +
-			"*📝 Contoh:*\n" +
-			"• `.tt https://vt.tiktok.com/xxxxx`\n" +
-			"• `.tt https://www.tiktok.com/@user/video/xxxxx`"
+	var ttURL string
+	if len(ctx.Args) > 0 {
+		ttURL = strings.Join(ctx.Args, " ")
+	} else if ctx.ReplyMessage != nil {
+		ttURL = helper.ExtractMatchingURL(ctx.ReplyMessage.Message, helper.IsTikTokURL)
+	}
+
+	if ttURL == "" {
+		message := "Masukkan link TikTok dulu.\n\n" +
+			"Usage:\n" +
+			"- .tt <url> - Download dari TikTok\n" +
+			"- Atau reply pesan berisi link TikTok dengan .tt\n\n" +
+			"Contoh:\n" +
+			"- .tt https://vt.tiktok.com/xxxxx\n" +
+			"- .tt https://www.tiktok.com/@user/video/xxxxx"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-
-	ttURL := strings.Join(ctx.Args, " ")
-
+	if !helper.IsTikTokURL(ttURL) {
+		message := "URL TikTok tidak valid.\n\n" +
+			"- Pastikan URL dari tiktok.com / vt.tiktok.com\n" +
+			"- Contoh: .tt https://vt.tiktok.com/xxxxx"
+		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
+		return err
+	}
 
 	apiURL := "https://api.azbry.com/api/download/tiktok?url=" + url.QueryEscape(ttURL)
 
 	ttResp, err := fetchTikTokAPI(apiURL)
 	if err != nil {
-		errorMsg := "❌ *Gagal mengambil data!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal mengambil data.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
 
 
 	if !ttResp.Status || len(ttResp.Result.Links) == 0 {
-		errorMsg := "❌ *Gagal download!*\n\n" +
-			"┌─⦿ *Info*\n" +
-			fmt.Sprintf("│ • %s\n", ttResp.Message) +
-			"│ • Pastikan link TikTok valid\n" +
-			"└──────────────"
+		errorMsg := "Gagal download.\n\n" +
+			fmt.Sprintf("- %s\n", ttResp.Message) +
+			"- Pastikan link TikTok valid"
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -140,10 +147,8 @@ func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 
 	videoData, err := downloadFileFast(videoURL)
 	if err != nil {
-		errorMsg := "❌ *Gagal download video!*\n\n" +
-			"┌─⦿ *Error*\n" +
-			fmt.Sprintf("│ • %s\n", err.Error()) +
-			"└──────────────"
+		errorMsg := "Gagal download video.\n\n" +
+			fmt.Sprintf("Error: %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -171,7 +176,7 @@ func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 		author = "Unknown"
 	}
 
-	caption := fmt.Sprintf("🎵 %s\n👤 %s", title, author)
+	caption := fmt.Sprintf("%s\n%s", title, author)
 
 	videoMsg := &waE2E.Message{
 		VideoMessage: &waE2E.VideoMessage{

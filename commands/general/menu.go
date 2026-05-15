@@ -92,8 +92,7 @@ func MenuHandler(ctx *lib.CommandContext) error {
 
 
 	var menuBuilder strings.Builder
-	menuBuilder.WriteString("*╭───⦿ GOWA-BOT ⦿───*\n")
-	menuBuilder.WriteString("│\n")
+	menuBuilder.WriteString("GOWA-BOT\n\n")
 
 
 	for _, tag := range tags {
@@ -104,7 +103,7 @@ func MenuHandler(ctx *lib.CommandContext) error {
 
 
 		tagName := strings.ToUpper(tag)
-		menuBuilder.WriteString(fmt.Sprintf("│ *%s:*\n", tagName))
+		menuBuilder.WriteString(fmt.Sprintf("%s:\n", tagName))
 
 
 		sort.Slice(tagCommands, func(i, j int) bool {
@@ -113,14 +112,11 @@ func MenuHandler(ctx *lib.CommandContext) error {
 
 		for _, cmd := range tagCommands {
 			display := formatCommand(cmd)
-			menuBuilder.WriteString(fmt.Sprintf("│   • %s\n", display))
+			menuBuilder.WriteString(fmt.Sprintf("- %s\n", display))
 		}
 
-		menuBuilder.WriteString("│\n")
+		menuBuilder.WriteString("\n")
 	}
-
-
-	menuBuilder.WriteString("╰────────────────\n")
 
 	message := menuBuilder.String()
 

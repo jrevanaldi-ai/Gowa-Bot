@@ -295,18 +295,43 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		}
 	}
 
+	var replyMsg *lib.ReplyMessageInfo
+	var mentions []string
+	if evt.Message.ExtendedTextMessage != nil && evt.Message.ExtendedTextMessage.ContextInfo != nil {
+		contextInfo := evt.Message.ExtendedTextMessage.ContextInfo
+		if contextInfo.StanzaID != nil && contextInfo.Participant != nil {
+			replyMsg = &lib.ReplyMessageInfo{
+				MessageID: *contextInfo.StanzaID,
+				Sender:    *contextInfo.Participant,
+				Message:   helper.ExtractMessageText(contextInfo.QuotedMessage),
+			}
+		}
+		if len(contextInfo.MentionedJID) > 0 {
+			mentions = make([]string, len(contextInfo.MentionedJID))
+			for i, mention := range contextInfo.MentionedJID {
+				mentions[i] = mention
+			}
+		}
+	}
+
 	cmd, args := b.parseCommandWithOwner(msg, isOwner, evt.Info.IsFromMe)
 
 	if cmd == "" || (cmd != "lune" && !b.Registry.IsCommand(cmd)) {
-		lowerMsg := strings.ToLower(msg)
-		if strings.Contains(lowerMsg, "lune") {
+		isLuneKeyword := strings.Contains(strings.ToLower(msg), "lune")
+		isAIReply := replyMsg != nil && helper.IsAIReply(b.Cache, evt.Info.Chat.String(), replyMsg.MessageID)
+
+		if isLuneKeyword || isAIReply {
 			if handler, ok := b.Registry.GetHandler("lune"); ok {
 
 				chatType := "Private"
 				if evt.Info.IsGroup {
 					chatType = "Group"
 				}
-				b.Logger.Message(evt.Info.PushName, evt.Info.Sender.String(), "lune (keyword)", chatType)
+				trigger := "lune (keyword)"
+				if isAIReply {
+					trigger = "lune (reply)"
+				}
+				b.Logger.Message(evt.Info.PushName, evt.Info.Sender.String(), trigger, chatType)
 
 				cmdCtx := &lib.CommandContext{
 					Ctx:                   context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
@@ -327,6 +352,8 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 						}
 						return message, nil
 					},
+					ReplyMessage: replyMsg,
+					Mentions:     mentions,
 				}
 
 				if err := handler(cmdCtx); err != nil {
@@ -366,29 +393,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		return
 	}
 
-	var replyMsg *lib.ReplyMessageInfo
-	if evt.Message.ExtendedTextMessage != nil && evt.Message.ExtendedTextMessage.ContextInfo != nil {
-		contextInfo := evt.Message.ExtendedTextMessage.ContextInfo
-		if contextInfo.StanzaID != nil && contextInfo.Participant != nil {
-			replyMsg = &lib.ReplyMessageInfo{
-				MessageID: *contextInfo.StanzaID,
-				Sender:    *contextInfo.Participant,
-				Message:   "",
-			}
-		}
-	}
-
-	var mentions []string
-	if evt.Message.ExtendedTextMessage != nil && evt.Message.ExtendedTextMessage.ContextInfo != nil {
-		contextInfo := evt.Message.ExtendedTextMessage.ContextInfo
-		if len(contextInfo.MentionedJID) > 0 {
-			mentions = make([]string, len(contextInfo.MentionedJID))
-			for i, mention := range contextInfo.MentionedJID {
-				mentions[i] = mention
-			}
-		}
-	}
-
 	cmdCtx := &lib.CommandContext{
 		Ctx:                   context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
 		Client:                b.Client,
@@ -424,7 +428,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	if err := handler(cmdCtx); err != nil {
 		b.Logger.Error("Command error: %v", err)
 
-		errorMsg := fmt.Sprintf("❌ Terjadi kesalahan: %v", err)
+		errorMsg := fmt.Sprintf("Terjadi kesalahan: %v", err)
 		_, _ = b.SendMessage(ctx, evt.Info.Chat, &waE2E.Message{
 			ExtendedTextMessage: &waE2E.ExtendedTextMessage{
 				Text: &errorMsg,

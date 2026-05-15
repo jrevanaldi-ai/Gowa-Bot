@@ -54,17 +54,17 @@ func GetppHandler(ctx *lib.CommandContext) error {
 		targetJID = phone
 	} else {
 
-		message := "❌ Format salah!\n\n" +
+		message := "Format salah.\n\n" +
 			"Gunakan salah satu cara berikut:\n" +
-			"• Reply pesan user\n" +
-			"• Tag user: @6281234567890\n" +
-			"• Masukkan nomor: .getpp 6281234567890"
+			"- Reply pesan user\n" +
+			"- Tag user: @6281234567890\n" +
+			"- Masukkan nomor: .getpp 6281234567890"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
 
-	loadingMsg := "⏳ Mengambil foto profil..."
+	loadingMsg := "Mengambil foto profil..."
 	sentMsg, err := ctx.SendMessage(helper.CreateSimpleReply(loadingMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 	if err != nil {
 		return fmt.Errorf("failed to send loading message: %w", err)
@@ -82,11 +82,11 @@ func GetppHandler(ctx *lib.CommandContext) error {
 	if err != nil {
 		var errorMsg string
 		if err == gowa.ErrProfilePictureUnauthorized {
-			errorMsg = "❌ User ini menyembunyikan foto profilnya dari Anda 🔒"
+			errorMsg = "User ini menyembunyikan foto profilnya dari Anda."
 		} else if err == gowa.ErrProfilePictureNotSet {
-			errorMsg = "❌ User ini tidak memiliki foto profil"
+			errorMsg = "User ini tidak memiliki foto profil."
 		} else {
-			errorMsg = fmt.Sprintf("❌ Gagal mengambil foto profil:\n```%v```", err)
+			errorMsg = fmt.Sprintf("Gagal mengambil foto profil:\n%v", err)
 		}
 
 
@@ -96,7 +96,7 @@ func GetppHandler(ctx *lib.CommandContext) error {
 
 
 	if profilePicInfo == nil || profilePicInfo.URL == "" {
-		message := "❌ User ini tidak memiliki foto profil"
+		message := "User ini tidak memiliki foto profil."
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(message, loadingMsgID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -108,21 +108,21 @@ func GetppHandler(ctx *lib.CommandContext) error {
 
 	resp, err := httpClient.Get(profilePicInfo.URL)
 	if err != nil {
-		errorMsg := fmt.Sprintf("❌ Gagal mendownload foto:\n```%v```", err)
+		errorMsg := fmt.Sprintf("Gagal mendownload foto:\n%v", err)
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, loadingMsgID, ctx.Sender.String(), ctx.Chat.String()))
 		return fmt.Errorf("failed to download profile picture: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		errorMsg := fmt.Sprintf("❌ Gagal mendownload foto (HTTP %d)", resp.StatusCode)
+		errorMsg := fmt.Sprintf("Gagal mendownload foto (HTTP %d).", resp.StatusCode)
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, loadingMsgID, ctx.Sender.String(), ctx.Chat.String()))
 		return fmt.Errorf("failed to download profile picture: HTTP %d", resp.StatusCode)
 	}
 
 	imageData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errorMsg := fmt.Sprintf("❌ Gagal membaca foto:\n```%v```", err)
+		errorMsg := fmt.Sprintf("Gagal membaca foto:\n%v", err)
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, loadingMsgID, ctx.Sender.String(), ctx.Chat.String()))
 		return fmt.Errorf("failed to read image data: %w", err)
 	}
@@ -130,19 +130,17 @@ func GetppHandler(ctx *lib.CommandContext) error {
 
 	uploadResp, err := ctx.Client.Upload(context.Background(), imageData, gowa.MediaImage)
 	if err != nil {
-		errorMsg := fmt.Sprintf("❌ Gagal mengupload foto:\n```%v```", err)
+		errorMsg := fmt.Sprintf("Gagal mengupload foto:\n%v", err)
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, loadingMsgID, ctx.Sender.String(), ctx.Chat.String()))
 		return fmt.Errorf("failed to upload image: %w", err)
 	}
 
 
 	caption := fmt.Sprintf(
-		"✅ *Foto Profil Berhasil Diambil!*\n\n"+
-			"┌─⦿ Info User\n"+
-			"│ • JID: ```%s```\n"+
-			"│ • Picture ID: ```%s```\n"+
-			"└──────────────\n\n"+
-			"_💡 Tips: Klik gambar untuk melihat full size_",
+		"Foto profil berhasil diambil.\n\n"+
+			"JID: %s\n"+
+			"Picture ID: %s\n\n"+
+			"Tips: Klik gambar untuk melihat full size.",
 		formatJID(targetJID),
 		profilePicInfo.ID,
 	)

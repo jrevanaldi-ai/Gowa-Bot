@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jrevanaldi-ai/gowa v0.0.0
 	github.com/mattn/go-sqlite3 v1.14.34
+	github.com/traefik/yaegi v0.16.1
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -22,7 +23,6 @@ require (
 	github.com/petermattis/goid v0.0.0-20260113132338-7c7de50cc741 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
-	github.com/traefik/yaegi v0.16.1 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.27 // indirect
 	go.mau.fi/libsignal v0.2.1 // indirect
 	go.mau.fi/util v0.9.6 // indirect

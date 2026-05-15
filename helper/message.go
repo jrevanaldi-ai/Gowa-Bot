@@ -9,6 +9,33 @@ import (
 )
 
 
+func ExtractMessageText(m *waE2E.Message) string {
+	if m == nil {
+		return ""
+	}
+	switch {
+	case m.Conversation != nil:
+		return *m.Conversation
+	case m.ExtendedTextMessage != nil && m.ExtendedTextMessage.Text != nil:
+		return *m.ExtendedTextMessage.Text
+	case m.ImageMessage != nil && m.ImageMessage.Caption != nil:
+		return *m.ImageMessage.Caption
+	case m.VideoMessage != nil && m.VideoMessage.Caption != nil:
+		return *m.VideoMessage.Caption
+	case m.DocumentMessage != nil && m.DocumentMessage.Caption != nil:
+		return *m.DocumentMessage.Caption
+	case m.EphemeralMessage != nil && m.EphemeralMessage.Message != nil:
+		return ExtractMessageText(m.EphemeralMessage.Message)
+	case m.ViewOnceMessage != nil && m.ViewOnceMessage.Message != nil:
+		return ExtractMessageText(m.ViewOnceMessage.Message)
+	case m.ViewOnceMessageV2 != nil && m.ViewOnceMessageV2.Message != nil:
+		return ExtractMessageText(m.ViewOnceMessageV2.Message)
+	case m.DocumentWithCaptionMessage != nil && m.DocumentWithCaptionMessage.Message != nil:
+		return ExtractMessageText(m.DocumentWithCaptionMessage.Message)
+	}
+	return ""
+}
+
 type ReplyConfig struct {
 	ReplyToMsgID string
 	SenderJID    string

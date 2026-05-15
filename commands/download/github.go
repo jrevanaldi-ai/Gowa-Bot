@@ -43,38 +43,40 @@ type GitHubRepoResponse struct {
 }
 
 func GitHubHandler(ctx *lib.CommandContext) error {
-	if len(ctx.Args) == 0 {
-		message := "❌ *Masukkan link GitHub!*\n\n" +
-			"┌─⦿ *Usage*\n" +
-			"│ • `.github <url>` - Download repo ZIP\n" +
-			"└──────────────\n\n" +
-			"*📝 Contoh:*\n" +
-			"• `.github https://github.com/jrevanaldi-ai/gowa-bot`"
+	var githubURL string
+	if len(ctx.Args) > 0 {
+		githubURL = strings.Join(ctx.Args, " ")
+	} else if ctx.ReplyMessage != nil {
+		githubURL = helper.ExtractMatchingURL(ctx.ReplyMessage.Message, func(u string) bool {
+			_, _, ok := helper.ExtractGitHubRepo(u)
+			return ok
+		})
+	}
+
+	if githubURL == "" {
+		message := "Masukkan link GitHub.\n\n" +
+			"Usage:\n" +
+			"- .github <url> - Download repo ZIP\n" +
+			"- Atau reply pesan berisi link GitHub dengan .github\n\n" +
+			"Contoh:\n" +
+			"- .github https://github.com/jrevanaldi-ai/gowa-bot"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
 
-	githubURL := strings.Join(ctx.Args, " ")
-	
-	// Basic parsing: github.com/user/repo
-	parts := strings.Split(strings.TrimPrefix(strings.TrimSuffix(githubURL, "/"), "https://"), "/")
-	if len(parts) < 3 || !strings.Contains(parts[0], "github.com") {
-		message := "❌ *URL GitHub tidak valid!*\n\n" +
-			"┌─⦿ *Info*\n" +
-			"│ • Format: `https://github.com/user/repo`\n" +
-			"└──────────────"
+	user, repo, ok := helper.ExtractGitHubRepo(githubURL)
+	if !ok {
+		message := "URL GitHub tidak valid.\n\n" +
+			"- Format: https://github.com/user/repo"
 		_, err := ctx.SendMessage(helper.CreateSimpleReply(message, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return err
 	}
-
-	user := parts[1]
-	repo := parts[2]
 
 	// 1. Fetch Repo Info
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s", user, repo)
 	repoInfo, err := fetchGitHubRepoInfo(apiURL)
 	if err != nil {
-		errorMsg := fmt.Sprintf("❌ *Gagal mengambil info repo!*\n\n│ • %s", err.Error())
+		errorMsg := fmt.Sprintf("Gagal mengambil info repo.\n\n- %s", err.Error())
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 		return nil
 	}
@@ -88,7 +90,7 @@ func GitHubHandler(ctx *lib.CommandContext) error {
 		zipURL = fmt.Sprintf("https://github.com/%s/%s/archive/refs/heads/master.zip", user, repo)
 		zipData, err = downloadFileGitHub(zipURL)
 		if err != nil {
-			errorMsg := "❌ *Gagal mendownload ZIP!*\n\n│ • Pastikan branch utama adalah 'main' atau 'master'"
+			errorMsg := "Gagal mendownload ZIP.\n\n- Pastikan branch utama adalah 'main' atau 'master'"
 			_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 			return nil
 		}
@@ -101,15 +103,13 @@ func GitHubHandler(ctx *lib.CommandContext) error {
 	}
 
 	fileName := fmt.Sprintf("%s.zip", repo)
-	caption := fmt.Sprintf("📦 *GitHub Repository*\n\n"+
-		"┌─⦿ *Info*\n"+
-		"│ • *Nama:* %s\n"+
-		"│ • *Owner:* %s\n"+
-		"│ • *Bintang:* %d ⭐\n"+
-		"│ • *Forks:* %d 🍴\n"+
-		"│ • *Bahasa:* %s\n"+
-		"└──────────────\n\n"+
-		"*Deskripsi:* %s", 
+	caption := fmt.Sprintf("GitHub Repository\n\n"+
+		"Nama: %s\n"+
+		"Owner: %s\n"+
+		"Bintang: %d\n"+
+		"Forks: %d\n"+
+		"Bahasa: %s\n\n"+
+		"Deskripsi: %s",
 		repoInfo.Name, repoInfo.Owner.Login, repoInfo.Stargazers, repoInfo.Forks, repoInfo.Language, repoInfo.Description)
 
 	senderStr := ctx.Sender.String()

@@ -184,6 +184,8 @@ func registerCommands(registry *lib.CommandRegistry) {
 
 	registry.Register(owner.SetprefixMetadata, owner.SetprefixHandler)
 
+	registry.Register(owner.JoinMetadata, owner.JoinHandler)
+
 	registry.Register(jadibot.JadibotMetadata, jadibot.JadibotHandler)
 	registry.Register(jadibot.ListJadibotMetadata, jadibot.ListJadibotHandler)
 	registry.Register(jadibot.StopJadibotMetadata, jadibot.StopJadibotHandler)
