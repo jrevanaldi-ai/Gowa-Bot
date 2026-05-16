@@ -20,7 +20,7 @@ import (
 
 var SpotifyMetadata = &lib.CommandMetadata{
 	Cmd:       "spotify",
-	Tag:       "download",
+	Tag:       "play",
 	Desc:      "Download audio dari Spotify",
 	Example:   ".sp Multo Cup of Joe",
 	Hidden:    false,
@@ -30,23 +30,22 @@ var SpotifyMetadata = &lib.CommandMetadata{
 
 
 type SpotifyResponse struct {
-	Creator string          `json:"creator"`
-	Source  string          `json:"source"`
-	Status  bool            `json:"status"`
-	Query   string          `json:"query"`
-	Result  SpotifyTrack    `json:"result"`
+	Success bool         `json:"success"`
+	Status  bool         `json:"status"`
+	Author  string       `json:"author"`
+	Result  SpotifyTrack `json:"result"`
 }
 
 
 type SpotifyTrack struct {
-	Title        string `json:"title"`
-	Artist       string `json:"artist"`
-	Album        string `json:"album"`
-	Cover        string `json:"cover"`
-	Duration     int    `json:"duration"`
-	DeezerUrl    string `json:"deezerUrl"`
-	DownloadLink string `json:"downloadLink"`
-	RawLink      string `json:"rawLink"`
+	Title       string `json:"title"`
+	Artist      string `json:"artist"`
+	Album       string `json:"album"`
+	ReleaseDate string `json:"release_date"`
+	Duration    string `json:"duration"`
+	Thumbnail   string `json:"thumbnail"`
+	SpotifyUrl  string `json:"spotify_url"`
+	DownloadUrl string `json:"download_url"`
 }
 
 
@@ -80,7 +79,7 @@ func SpotifyHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	apiURL := "https://api.azbry.com/api/download/spoplay?q=" + url.QueryEscape(query)
+	apiURL := "https://api.yardansh.com/downloader/spotify-play?q=" + url.QueryEscape(query)
 
 	spResp, err := fetchSpotifyAPI(apiURL)
 	if err != nil {
@@ -91,7 +90,7 @@ func SpotifyHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	if !spResp.Status || spResp.Result.DownloadLink == "" {
+	if !spResp.Success || spResp.Result.DownloadUrl == "" {
 		errorMsg := "Lagu tidak ditemukan.\n\n" +
 			"- Coba dengan kata kunci lain\n" +
 			"- Pastikan judul benar"
@@ -144,13 +143,6 @@ func fetchSpotifyAPI(apiURL string) (*SpotifyResponse, error) {
 func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 	result := data.Result
 
-
-	downloadURL := result.RawLink
-	if downloadURL == "" {
-		downloadURL = result.DownloadLink
-	}
-
-
 	sendMsg := fmt.Sprintf(
 		"Downloading audio...\n\n"+
 			"Title: %s\n"+
@@ -161,7 +153,7 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 	_, _ = ctx.SendMessage(helper.CreateSimpleReply(sendMsg, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))
 
 
-	audioData, err := downloadFileFast(downloadURL)
+	audioData, err := downloadFileFast(result.DownloadUrl)
 	if err != nil {
 		errorMsg := "Gagal download audio.\n\n" +
 			fmt.Sprintf("Error: %s", err.Error())
@@ -176,42 +168,23 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 	}
 
 
-	durationSeconds := uint32(result.Duration)
+	durationSeconds := parseDuration(result.Duration)
 
 
-	senderStr := ctx.Sender.String()
-	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
-	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
-	showAd := true
-	renderLarge := true
 	ptt := false
 
 	audioMsg := &waE2E.Message{
 		AudioMessage: &waE2E.AudioMessage{
-			URL:           proto.String(uploadResp.URL),
-			DirectPath:    proto.String(uploadResp.DirectPath),
-			Mimetype:      proto.String("audio/mpeg"),
-			PTT:           &ptt,
-			FileSHA256:    uploadResp.FileSHA256,
-			FileEncSHA256: uploadResp.FileEncSHA256,
-			FileLength:    proto.Uint64(uploadResp.FileLength),
-			MediaKey:      uploadResp.MediaKey,
+			URL:               proto.String(uploadResp.URL),
+			DirectPath:        proto.String(uploadResp.DirectPath),
+			Mimetype:          proto.String("audio/mpeg"),
+			PTT:               &ptt,
+			FileSHA256:        uploadResp.FileSHA256,
+			FileEncSHA256:     uploadResp.FileEncSHA256,
+			FileLength:        proto.Uint64(uploadResp.FileLength),
+			MediaKey:          uploadResp.MediaKey,
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
-			Seconds:       proto.Uint32(durationSeconds),
-			ContextInfo: &waE2E.ContextInfo{
-				ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
-					Title:                 &result.Title,
-					Body:                  proto.String(fmt.Sprintf("%s • %s", result.Artist, result.Album)),
-					MediaType:             &mediaType,
-					ThumbnailURL:          &result.Cover,
-					SourceURL:             &result.DeezerUrl,
-					ShowAdAttribution:     &showAd,
-					RenderLargerThumbnail: &renderLarge,
-					AdType:                &adType,
-				},
-				StanzaID:    &ctx.MessageID,
-				Participant: &senderStr,
-			},
+			Seconds:           proto.Uint32(durationSeconds),
 		},
 	}
 

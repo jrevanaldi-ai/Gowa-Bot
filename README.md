@@ -4,7 +4,7 @@
 
 **WhatsApp Bot sederhana dan powerful yang dibangun dengan Go**
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com/)
 
@@ -38,7 +38,9 @@ Dengan arsitektur yang modular, Anda dapat dengan mudah menambahkan command baru
 | 🤝 | **Jadibot** | Multi-bot — user lain bisa pairing nomor mereka sebagai sub-bot |
 | 🧠 | **AI Integration** | Integrasi Claude AI lewat keyword `lune` |
 | 💰 | **Payment Gateway** | Donasi QRIS via MustikaPay |
-| ⬇️ | **Downloader** | Download dari YouTube, Spotify, Instagram, TikTok, GitHub |
+| 🎵 | **Music Player** | Play audio dari YouTube & Spotify via API yardansh |
+| ⬇️ | **Downloader** | Download dari Instagram, TikTok, GitHub |
+| 🎨 | **Sticker Maker** | Buat sticker brat dari teks (auto-convert PNG → WebP 512×512) |
 | 🚫 | **Ban System** | Ban user atau group dari pemakaian bot |
 | 🛡️ | **Eval Sandbox** | Eksekusi kode Go runtime via yaegi (owner only) |
 
@@ -48,9 +50,10 @@ Dengan arsitektur yang modular, Anda dapat dengan mudah menambahkan command baru
 
 Sebelum memulai, pastikan Anda telah menginstal:
 
-- **[Go](https://go.dev/dl/)** versi 1.21 atau lebih tinggi
+- **[Go](https://go.dev/dl/)** versi 1.26 atau lebih tinggi
 - **[Git](https://git-scm.com/downloads)** untuk clone repository
 - **WhatsApp** aktif untuk pairing bot
+- **[ImageMagick](https://imagemagick.org/)** dengan dukungan WebP (binary `convert`) — wajib untuk fitur sticker `.brat`. Di Debian/Ubuntu: `sudo apt install imagemagick libwebp7`
 
 ---
 
@@ -154,7 +157,7 @@ Saat pertama kali menjalankan bot, Anda perlu melakukan **pairing**:
 
 Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`). Owner dapat menggunakan command **tanpa prefix**.
 
-> 💡 **Kategori (tag) di `.menu`** mengikuti field `Tag` pada metadata command. Tag yang sekarang dipakai: `main`, `utility`, `download`, `search`, `owner`, `jadibot`, `debug`. `.menu` menampilkan tag-nya secara UPPER-CASE dan sorted alfabet.
+> 💡 **Kategori (tag) di `.menu`** mengikuti field `Tag` pada metadata command. Tag yang sekarang dipakai: `main`, `utility`, `play`, `download`, `maker`, `search`, `owner`, `jadibot`, `debug`. `.menu` menampilkan tag-nya secara UPPER-CASE dan sorted alfabet.
 
 ### 🛠️ Utility
 
@@ -178,15 +181,28 @@ Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`).
 > - **Keyword `lune`:** pesan apa pun yang mengandung kata "lune" (case-insensitive, tanpa prefix sekalipun) otomatis dijawab AI. Contoh: `"hai lune apa kabar?"`
 > - **Reply ke pesan AI:** balas pesan dari bot AI (dalam 30 menit terakhir, tracked via cache) juga otomatis dilanjutkan sebagai percakapan AI tanpa perlu nulis `lune` lagi.
 
+### 🎵 Play
+
+| Command | Alias | Deskripsi | Contoh |
+|---------|-------|-----------|--------|
+| `.play` | `.ytmp3`, `.yta` | Cari & kirim audio dari YouTube (API yardansh) | `.play Multo Cup of Joe` |
+| `.spotify` | `.sp`, `.splay` | Cari & kirim audio dari Spotify (API yardansh) | `.spotify Multo` |
+
 ### ⬇️ Download
 
 | Command | Alias | Deskripsi | Contoh |
 |---------|-------|-----------|--------|
-| `.play` | - | Download audio dari YouTube | `.play lagu galau` |
-| `.spotify` | - | Download dari Spotify | `.spotify <url>` |
 | `.instagram` | - | Download Instagram post/reel | `.instagram <url>` |
 | `.tiktok` | - | Download video TikTok | `.tiktok <url>` |
 | `.github` | - | Info / download repo GitHub | `.github user/repo` |
+
+### 🎨 Maker
+
+| Command | Alias | Deskripsi | Contoh |
+|---------|-------|-----------|--------|
+| `.brat` | - | Buat sticker brat dari teks (PNG → WebP 512×512) | `.brat halo dunia` |
+
+> 💡 `.brat` butuh `convert` (ImageMagick) terpasang di system — gambar dari API berformat PNG dan harus dikonversi ke WebP supaya WhatsApp menampilkan sebagai sticker.
 
 ### 🔍 Search
 
@@ -261,8 +277,6 @@ DEBUG:
 DOWNLOAD:
 - github
 - instagram
-- play
-- spotify
 - tiktok
 
 JADIBOT:
@@ -279,6 +293,9 @@ MAIN:
 - getpp (pp)
 - help (info)
 
+MAKER:
+- brat
+
 OWNER:
 - bangroup
 - banuser
@@ -291,6 +308,10 @@ OWNER:
 - setprefix
 - unbangroup
 - unbanuser
+
+PLAY:
+- play (ytmp3)
+- spotify (sp)
 
 SEARCH:
 - ttsearch
@@ -455,7 +476,8 @@ export GOWA_BOT_OWNERS="081234567890"
 
 ```
 gowa-bot/
-├── 📄 main.go              # Entry point — daftarkan command di sini
+├── 📄 main.go              # Entry point — bootstrap, flag, koneksi WA
+├── 📄 registryCmd.go       # registerCommands() — daftarkan command di sini
 ├── 📦 go.mod               # Dependensi Go (replace gowa → ./gowa-lib)
 ├── 🔧 .env.example         # Template konfigurasi
 ├── 📖 README.md            # Dokumentasi (file ini)
@@ -469,11 +491,12 @@ gowa-bot/
 │   ├── 📂 utility/           # ping
 │   ├── 📂 owner/             # exec, eval, setmode, setprefix, ban, dll
 │   ├── 📂 jadibot/           # multi-bot management
-│   ├── 📂 download/          # play, spotify, instagram, tiktok, github
+│   ├── 📂 download/          # play, spotify (tag=play), instagram, tiktok, github, ttsearch
+│   ├── 📂 maker/             # brat (sticker generator)
 │   └── 📂 debug/             # checkephemeral
 │
 ├── 📂 helper/
-│   ├── logger.go             # Logger berwarna
+│   ├── logger.go             # Logger berwarna (Message multiline, Debug silent)
 │   ├── cache.go              # Cache TTL in-memory
 │   ├── ephemeral.go          # Helper pesan ephemeral
 │   ├── message.go            # Builder reply message (CreateSimpleReply)
@@ -491,6 +514,8 @@ gowa-bot/
 ├── 📂 gowa-lib/              # Fork lokal library Gowa
 └── 📂 sessions/              # Storage untuk session jadibot (auto-generated)
 ```
+
+> 💡 File command terorganisir berdasarkan **folder**, sedangkan kategori di `.menu` terorganisir berdasarkan **field `Tag`** di metadata. `play.go` & `spotify.go` ada di folder `download/` tapi Tag-nya `"play"`, jadi muncul di section `PLAY:` saat `.menu`.
 
 ---
 
@@ -528,7 +553,7 @@ func HaloHandler(ctx *lib.CommandContext) error {
 }
 ```
 
-2. **Wajib** daftarkan di `main.go::registerCommands()`:
+2. **Wajib** daftarkan di `registryCmd.go::registerCommands()`:
 
 ```go
 func registerCommands(registry *lib.CommandRegistry) {
@@ -537,7 +562,7 @@ func registerCommands(registry *lib.CommandRegistry) {
 }
 ```
 
-> ⚠️ **Tidak ada autoload.** Kalau lupa daftar di sini, command tidak akan jalan.
+> ⚠️ **Tidak ada autoload.** Kalau lupa daftar di `registryCmd.go`, command tidak akan jalan. Import package command-nya juga harus ditambahkan di atas file `registryCmd.go`.
 
 3. Build dan jalankan!
 
@@ -567,7 +592,7 @@ Untuk detail teknis lebih lanjut, lihat **[CLAUDE.md](CLAUDE.md)**.
 
 ### Tips Development
 
-- **Toolchain Go:** `go.mod` declare `go 1.26`, README minimal 1.21+, CI (`.github/workflows/go.yml`) pinned 1.20. Kalau `go build` gagal, cek versi Go sebelum nuduh bug kode.
+- **Toolchain Go:** Proyek ini di-pin ke Go 1.26 (`go.mod`, README, CI). Pastikan toolchain lokal Anda match sebelum nuduh bug kode kalau `go build` gagal.
 - **Fork Gowa:** Direktori `gowa-lib/` adalah fork lokal (lihat `replace` di `go.mod`). Edit di sana langsung mempengaruhi bot — `go mod tidy` tidak akan pull versi remote.
 - **Session DB:** Jangan hapus `gowa-bot.db` saat bot jalan, session WhatsApp **dan** data app (jadibots/banned/donations) ada di file yang sama.
 - **Cyclic import:** `client/` import `commands/owner` (untuk `ParseExecCommand`). Jangan bikin `commands/owner` import `client/`. Pakai `lib.BotClientInterface` / `lib.JadibotSessionManagerInterface` kalau butuh akses.

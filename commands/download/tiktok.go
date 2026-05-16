@@ -161,10 +161,6 @@ func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 
 
 	senderStr := ctx.Sender.String()
-	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
-	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
-	showAd := true
-	renderLarge := true
 
 	title := data.Result.Title
 	if title == "" {
@@ -177,6 +173,7 @@ func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 	}
 
 	caption := fmt.Sprintf("%s\n%s", title, author)
+	thumbBytes := helper.FetchThumbnail(data.Result.Thumbnail)
 
 	videoMsg := &waE2E.Message{
 		VideoMessage: &waE2E.VideoMessage{
@@ -191,16 +188,8 @@ func sendTikTokVideo(ctx *lib.CommandContext, data *TikTokResponse) error {
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
 			Seconds:           proto.Uint32(0),
 			GifPlayback:       proto.Bool(false),
+			JPEGThumbnail:     thumbBytes,
 			ContextInfo: &waE2E.ContextInfo{
-				ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
-					Title:                 proto.String("TikTok Video"),
-					Body:                  proto.String(author),
-					MediaType:             &mediaType,
-					ThumbnailURL:          &data.Result.Thumbnail,
-					ShowAdAttribution:     &showAd,
-					RenderLargerThumbnail: &renderLarge,
-					AdType:                &adType,
-				},
 				StanzaID:    &ctx.MessageID,
 				Participant: &senderStr,
 			},

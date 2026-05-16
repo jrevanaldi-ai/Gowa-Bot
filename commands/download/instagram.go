@@ -165,34 +165,23 @@ func sendInstagramVideo(ctx *lib.CommandContext, data *InstagramResponse) error 
 
 
 	senderStr := ctx.Sender.String()
-	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
-	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
-	showAd := true
-	renderLarge := true
+	thumbBytes := helper.FetchThumbnail(data.Thumb)
 
 	videoMsg := &waE2E.Message{
 		VideoMessage: &waE2E.VideoMessage{
-			URL:           proto.String(uploadResp.URL),
-			DirectPath:    proto.String(uploadResp.DirectPath),
-			Mimetype:      proto.String("video/mp4"),
-			Caption:       proto.String("Instagram Reel"),
-			FileSHA256:    uploadResp.FileSHA256,
-			FileEncSHA256: uploadResp.FileEncSHA256,
-			FileLength:    proto.Uint64(uploadResp.FileLength),
-			MediaKey:      uploadResp.MediaKey,
+			URL:               proto.String(uploadResp.URL),
+			DirectPath:        proto.String(uploadResp.DirectPath),
+			Mimetype:          proto.String("video/mp4"),
+			Caption:           proto.String("Instagram Reel"),
+			FileSHA256:        uploadResp.FileSHA256,
+			FileEncSHA256:     uploadResp.FileEncSHA256,
+			FileLength:        proto.Uint64(uploadResp.FileLength),
+			MediaKey:          uploadResp.MediaKey,
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
-			Seconds:       proto.Uint32(0),
-			GifPlayback:   proto.Bool(false),
+			Seconds:           proto.Uint32(0),
+			GifPlayback:       proto.Bool(false),
+			JPEGThumbnail:     thumbBytes,
 			ContextInfo: &waE2E.ContextInfo{
-				ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
-					Title:                 proto.String("Instagram Reel"),
-					Body:                  proto.String("Video dari Instagram"),
-					MediaType:             &mediaType,
-					ThumbnailURL:          &data.Thumb,
-					ShowAdAttribution:     &showAd,
-					RenderLargerThumbnail: &renderLarge,
-					AdType:                &adType,
-				},
 				StanzaID:    &ctx.MessageID,
 				Participant: &senderStr,
 			},
@@ -224,33 +213,21 @@ func sendInstagramImages(ctx *lib.CommandContext, data *InstagramResponse) error
 
 
 		senderStr := ctx.Sender.String()
-		mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
-		adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
-		showAd := true
-		renderLarge := true
 
 		caption := fmt.Sprintf("Instagram Photo (%d/%d)", i+1, len(data.Images))
 
 		imageMsg := &waE2E.Message{
 			ImageMessage: &waE2E.ImageMessage{
-				URL:           proto.String(uploadResp.URL),
-				DirectPath:    proto.String(uploadResp.DirectPath),
-				Mimetype:      proto.String("image/jpeg"),
-				Caption:       proto.String(caption),
-				FileSHA256:    uploadResp.FileSHA256,
-				FileEncSHA256: uploadResp.FileEncSHA256,
-				FileLength:    proto.Uint64(uploadResp.FileLength),
-				MediaKey:      uploadResp.MediaKey,
+				URL:               proto.String(uploadResp.URL),
+				DirectPath:        proto.String(uploadResp.DirectPath),
+				Mimetype:          proto.String("image/jpeg"),
+				Caption:           proto.String(caption),
+				FileSHA256:        uploadResp.FileSHA256,
+				FileEncSHA256:     uploadResp.FileEncSHA256,
+				FileLength:        proto.Uint64(uploadResp.FileLength),
+				MediaKey:          uploadResp.MediaKey,
 				MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
 				ContextInfo: &waE2E.ContextInfo{
-					ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
-						Title:                 proto.String("Instagram Photo"),
-						Body:                  proto.String("Foto dari Instagram"),
-						MediaType:             &mediaType,
-						ShowAdAttribution:     &showAd,
-						RenderLargerThumbnail: &renderLarge,
-						AdType:                &adType,
-					},
 					StanzaID:    &ctx.MessageID,
 					Participant: &senderStr,
 				},

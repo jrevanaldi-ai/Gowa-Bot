@@ -8,6 +8,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa/types"
+	"github.com/jrevanaldi-ai/gowa/types/events"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -29,7 +30,7 @@ func init() {
 		"Client": reflect.ValueOf((*gowa.Client)(nil)),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa/types"] = map[string]reflect.Value{
+	Symbols["github.com/jrevanaldi-ai/gowa/types/types"] = map[string]reflect.Value{
 		"JID":               reflect.ValueOf((*types.JID)(nil)),
 		"ParseJID":          reflect.ValueOf(types.ParseJID),
 		"NewJID":            reflect.ValueOf(types.NewJID),
@@ -40,7 +41,7 @@ func init() {
 		"BroadcastServer":   reflect.ValueOf(types.BroadcastServer),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa/proto/waE2E"] = map[string]reflect.Value{
+	Symbols["github.com/jrevanaldi-ai/gowa/proto/waE2E/waE2E"] = map[string]reflect.Value{
 		"Message":             reflect.ValueOf((*waE2E.Message)(nil)),
 		"ExtendedTextMessage": reflect.ValueOf((*waE2E.ExtendedTextMessage)(nil)),
 		"ContextInfo":         reflect.ValueOf((*waE2E.ContextInfo)(nil)),
@@ -50,11 +51,19 @@ func init() {
 		"ReactionMessage":     reflect.ValueOf((*waE2E.ReactionMessage)(nil)),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa-bot/lib"] = map[string]reflect.Value{
+	Symbols["github.com/jrevanaldi-ai/gowa/types/events/events"] = map[string]reflect.Value{
+		"Message":      reflect.ValueOf((*events.Message)(nil)),
+		"Connected":    reflect.ValueOf((*events.Connected)(nil)),
+		"Disconnected": reflect.ValueOf((*events.Disconnected)(nil)),
+		"LoggedOut":    reflect.ValueOf((*events.LoggedOut)(nil)),
+		"PairSuccess":  reflect.ValueOf((*events.PairSuccess)(nil)),
+	}
+
+	Symbols["github.com/jrevanaldi-ai/gowa-bot/lib/lib"] = map[string]reflect.Value{
 		"CommandContext": reflect.ValueOf((*lib.CommandContext)(nil)),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa-bot/helper"] = map[string]reflect.Value{
+	Symbols["github.com/jrevanaldi-ai/gowa-bot/helper/helper"] = map[string]reflect.Value{
 		"CreateSimpleReply": reflect.ValueOf(helper.CreateSimpleReply),
 		"NewLogger":         reflect.ValueOf(helper.NewLogger),
 		"FormatAmount":      reflect.ValueOf(helper.FormatAmount),

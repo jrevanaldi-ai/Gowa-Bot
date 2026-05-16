@@ -26,6 +26,7 @@ type BotClient struct {
 	EphemeralHelper       *helper.EphemeralHelper
 	JadibotSessionManager *helper.JadibotSessionManager
 	DBManager             *helper.DatabaseManager
+	Dispatcher            *lib.Dispatcher
 	Owners                map[string]bool
 	SelfMode              bool
 	IsMainBot             bool
@@ -94,10 +95,16 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		prefixes = []string{"."}
 	}
 
+	maxWorkers := config.MaxWorkers
+	if maxWorkers <= 0 {
+		maxWorkers = 10
+	}
+
 	botClient := &BotClient{
 		Registry:              registry,
 		Logger:                helper.NewLogger("BotClient"),
 		Cache:                 helper.NewCache(),
+		Dispatcher:            lib.NewDispatcher(maxWorkers),
 		Owners:                owners,
 		SelfMode:              config.SelfMode,
 		IsMainBot:             config.IsMainBot,
@@ -137,7 +144,10 @@ func (b *BotClient) SendMessage(ctx context.Context, chat types.JID, message *wa
 }
 
 func (b *BotClient) HandleMessage(ctx context.Context, evt *events.Message) {
-
+	if b.Dispatcher != nil {
+		b.Dispatcher.Run(func() { b.processMessage(ctx, evt) })
+		return
+	}
 	go b.processMessage(ctx, evt)
 }
 
@@ -317,7 +327,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	cmd, args := b.parseCommandWithOwner(msg, isOwner, evt.Info.IsFromMe)
 
 	if cmd == "" || (cmd != "lune" && !b.Registry.IsCommand(cmd)) {
-		isLuneKeyword := strings.Contains(strings.ToLower(msg), "lune")
+		isLuneKeyword := containsWord(msg, "lune")
 		isAIReply := replyMsg != nil && helper.IsAIReply(b.Cache, evt.Info.Chat.String(), replyMsg.MessageID)
 
 		if isLuneKeyword || isAIReply {
@@ -354,6 +364,8 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 					},
 					ReplyMessage: replyMsg,
 					Mentions:     mentions,
+					RawEvent:     evt,
+					RawMessage:   evt.Message,
 				}
 
 				if err := handler(cmdCtx); err != nil {
@@ -415,6 +427,8 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		},
 		ReplyMessage: replyMsg,
 		Mentions:     mentions,
+		RawEvent:     evt,
+		RawMessage:   evt.Message,
 	}
 
 	b.mu.RLock()
@@ -463,6 +477,8 @@ func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, 
 			}
 			return message, nil
 		},
+		RawEvent:   evt,
+		RawMessage: evt.Message,
 	}
 
 	handler, ok := b.Registry.GetHandler("exec")
@@ -473,6 +489,28 @@ func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, 
 	if err := handler(cmdCtx); err != nil {
 		b.Logger.Error("Exec command error: %v", err)
 	}
+}
+
+func containsWord(msg, word string) bool {
+	lower := strings.ToLower(msg)
+	w := strings.ToLower(word)
+	idx := 0
+	for {
+		found := strings.Index(lower[idx:], w)
+		if found < 0 {
+			return false
+		}
+		start := idx + found
+		end := start + len(w)
+		if (start == 0 || !isWordChar(lower[start-1])) && (end == len(lower) || !isWordChar(lower[end])) {
+			return true
+		}
+		idx = start + 1
+	}
+}
+
+func isWordChar(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_'
 }
 
 func extractMediaSize(m *waE2E.Message) string {
@@ -583,17 +621,6 @@ func (b *BotClient) isOwner(jid types.JID) bool {
 
 	if b.Owners[jid.User] {
 		return true
-	}
-
-	if b.IsMainBot && b.DBManager != nil {
-		jadibots, err := b.DBManager.GetActiveJadibot()
-		if err == nil {
-			for _, bot := range jadibots {
-				if bot.PhoneNumber == jid.User || bot.PhoneNumber == jid.String() {
-					return true
-				}
-			}
-		}
 	}
 
 	return false

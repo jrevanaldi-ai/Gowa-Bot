@@ -131,26 +131,15 @@ func HumanSize(n uint64) string {
 
 
 func Banner() {
-	fmt.Printf(`
-%s╔═══════════════════════════════════════════╗
-║%s  ██████╗  ██████╗ ██╗  ██╗██╗   ██╗%s
-║  ██╔══██╗██╔═══██╗╚██╗██╔╝╚██╗ ██╔╝%s
-║  ██████╔╝██║   ██║ ╚███╔╝  ╚████╔╝ %s
-║  ██╔══██╗██║   ██║ ██╔██╗   ╚██╔╝  %s
-║  ██████╔╝╚██████╔╝██╔╝ ██╗   ██║   %s
-║  ╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   %s
-║%s         Gowa-Bot - WhatsApp Bot         %s
-║%s         Created with Gowa Library       %s
-╚═══════════════════════════════════════════╝%s
-
-`,
-		ColorBoldCyan, ColorWhite, ColorReset,
-		ColorBoldCyan, ColorReset,
-		ColorBoldCyan, ColorReset,
-		ColorBoldCyan, ColorReset,
-		ColorBoldCyan, ColorReset,
-		ColorBoldCyan, ColorReset,
-		ColorCyan, ColorReset,
-		ColorCyan, ColorReset,
-		ColorReset)
+	fmt.Printf("\n%s╔═══════════════════════════════════════════╗\n"+
+		"║   ██████╗  ██████╗ ██╗    ██╗ █████╗ \n"+
+		"║  ██╔════╝ ██╔═══██╗██║    ██║██╔══██╗\n"+
+		"║  ██║  ███╗██║   ██║██║ █╗ ██║███████║\n"+
+		"║  ██║   ██║██║   ██║██║███╗██║██╔══██║\n"+
+		"║  ╚██████╔╝╚██████╔╝╚███╔███╔╝██║  ██║\n"+
+		"║   ╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝\n"+
+		"║         Gowa-Bot - WhatsApp Bot         \n"+
+		"║         Created with Gowa Library       \n"+
+		"╚═══════════════════════════════════════════╝%s\n\n",
+		ColorBoldCyan, ColorReset)
 }

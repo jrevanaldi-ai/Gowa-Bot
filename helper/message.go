@@ -1,12 +1,154 @@
 package helper
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
+	_ "image/gif"
+	_ "image/png"
+	"io"
+	"net/http"
+	"sync"
 	"time"
 
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
 	"google.golang.org/protobuf/proto"
 )
+
+type cachedThumb struct {
+	Data   []byte
+	Width  uint32
+	Height uint32
+}
+
+var thumbnailCache sync.Map
+
+func FetchThumbnail(thumbURL string) []byte {
+	t := fetchThumbnailFull(thumbURL)
+	if t == nil {
+		return nil
+	}
+	return t.Data
+}
+
+func FetchThumbnailMeta(thumbURL string) ([]byte, uint32, uint32) {
+	t := fetchThumbnailFull(thumbURL)
+	if t == nil {
+		return nil, 0, 0
+	}
+	return t.Data, t.Width, t.Height
+}
+
+func fetchThumbnailFull(thumbURL string) *cachedThumb {
+	if thumbURL == "" {
+		return nil
+	}
+	if cached, ok := thumbnailCache.Load(thumbURL); ok {
+		if t, ok := cached.(*cachedThumb); ok {
+			return t
+		}
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequest("GET", thumbURL, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 4*1024*1024))
+	if err != nil || len(raw) == 0 {
+		return nil
+	}
+
+	processed, w, h := processThumbnail(raw)
+	if processed == nil {
+		return nil
+	}
+
+	thumb := &cachedThumb{Data: processed, Width: w, Height: h}
+	thumbnailCache.Store(thumbURL, thumb)
+	return thumb
+}
+
+func processThumbnail(raw []byte) ([]byte, uint32, uint32) {
+	img, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil, 0, 0
+	}
+
+	const maxSide = 192
+	bounds := img.Bounds()
+	srcW, srcH := bounds.Dx(), bounds.Dy()
+
+	dstW, dstH := srcW, srcH
+	if srcW > maxSide || srcH > maxSide {
+		if srcW >= srcH {
+			dstW = maxSide
+			dstH = srcH * maxSide / srcW
+		} else {
+			dstH = maxSide
+			dstW = srcW * maxSide / srcH
+		}
+	}
+
+	dst := image.NewRGBA(image.Rect(0, 0, dstW, dstH))
+	for y := 0; y < dstH; y++ {
+		sy := bounds.Min.Y + y*srcH/dstH
+		for x := 0; x < dstW; x++ {
+			sx := bounds.Min.X + x*srcW/dstW
+			dst.Set(x, y, img.At(sx, sy))
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 70}); err != nil {
+		return nil, 0, 0
+	}
+	return buf.Bytes(), uint32(dstW), uint32(dstH)
+}
+
+func CreateLinkPreviewReply(text, title, description, sourceURL string, thumbBytes []byte, replyToMsgID, senderJID, chatJID string) *waE2E.Message {
+	return CreateLinkPreviewReplyWithSize(text, title, description, sourceURL, thumbBytes, 0, 0, replyToMsgID, senderJID, chatJID)
+}
+
+func CreateLinkPreviewReplyWithSize(text, title, description, sourceURL string, thumbBytes []byte, thumbW, thumbH uint32, replyToMsgID, senderJID, chatJID string) *waE2E.Message {
+	remoteJID := chatJID
+	if remoteJID == "" {
+		remoteJID = senderJID
+	}
+	previewType := waE2E.ExtendedTextMessage_IMAGE
+
+	ext := &waE2E.ExtendedTextMessage{
+		Text:        proto.String(text),
+		Title:       proto.String(title),
+		Description: proto.String(description),
+		MatchedText: proto.String(sourceURL),
+		PreviewType: &previewType,
+		ContextInfo: &waE2E.ContextInfo{
+			StanzaID:    proto.String(replyToMsgID),
+			Participant: proto.String(senderJID),
+			RemoteJID:   proto.String(remoteJID),
+		},
+	}
+	if len(thumbBytes) > 0 {
+		ext.JPEGThumbnail = thumbBytes
+		if thumbW > 0 && thumbH > 0 {
+			ext.ThumbnailWidth = proto.Uint32(thumbW)
+			ext.ThumbnailHeight = proto.Uint32(thumbH)
+		}
+	}
+
+	return &waE2E.Message{ExtendedTextMessage: ext}
+}
 
 
 func ExtractMessageText(m *waE2E.Message) string {

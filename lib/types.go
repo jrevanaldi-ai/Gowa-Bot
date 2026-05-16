@@ -6,6 +6,7 @@ import (
 	"github.com/jrevanaldi-ai/gowa"
 	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa/types"
+	"github.com/jrevanaldi-ai/gowa/types/events"
 )
 
 type BotClientInterface interface {
@@ -77,6 +78,23 @@ type CommandContext struct {
 	ReplyMessage *ReplyMessageInfo
 
 	Mentions []string
+
+	RawEvent   *events.Message
+	RawMessage *waE2E.Message
+}
+
+func (c *CommandContext) GetRawEvent() *events.Message {
+	return c.RawEvent
+}
+
+func (c *CommandContext) GetRawMessage() *waE2E.Message {
+	if c.RawMessage != nil {
+		return c.RawMessage
+	}
+	if c.RawEvent != nil {
+		return c.RawEvent.Message
+	}
+	return nil
 }
 
 func (c *CommandContext) SendMessage(message *waE2E.Message) (interface{}, error) {

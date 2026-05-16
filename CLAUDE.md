@@ -13,7 +13,7 @@ go test ./...                 # tests (CI: .github/workflows/go.yml)
 
 Flags (in `main.go`): `-phone`, `-pair`, `-db` (default `gowa-bot.db`), `-self`, `-log-level`, `-mustika-api-key`, `-ai-api-key`. Each flag has an env-var fallback prefixed `GOWA_BOT_` (see `.env.example`). `loadEnvFile()` parses `.env` at startup — no external dotenv lib.
 
-**Go toolchain mismatch:** `go.mod` declares `go 1.26`, README says 1.21+, CI is pinned to 1.20. If `go build` fails, check the toolchain version before assuming a code issue.
+**Go toolchain:** Pinned to `go 1.26` across `go.mod`, README, and `.github/workflows/go.yml`. If `go build` fails, check the local toolchain version before assuming a code issue.
 
 **Vendored upstream:** `go.mod` has `replace github.com/jrevanaldi-ai/gowa => ./gowa-lib`. The `gowa-lib/` directory is a local fork of the Gowa WhatsApp library — edits there affect the bot, and `go mod tidy` will not pull a remote version.
 
@@ -36,7 +36,7 @@ The flow on every WhatsApp message: `gowa.Client` event → `BotClient.EventHand
 
 ### Adding a command
 1. Create `commands/<category>/<name>.go` defining `<Name>Metadata *lib.CommandMetadata` and `<Name>Handler(ctx *lib.CommandContext) error`.
-2. Register in `main.go::registerCommands` — **must be added there**, no autoload.
+2. Register in `registryCmd.go::registerCommands` — **must be added there**, no autoload. (`registryCmd.go` is `package main`, just split out from `main.go` so command imports stay separate from bootstrap.)
 3. Send replies via `ctx.SendMessage(helper.CreateSimpleReply(text, ctx.MessageID, ctx.Sender.String(), ctx.Chat.String()))`. `CreateSimpleReply` builds the quoted-reply `ExtendedTextMessage` correctly.
 
 ### Jadibot (multi-tenant sub-bots)

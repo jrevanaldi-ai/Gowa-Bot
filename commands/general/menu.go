@@ -5,51 +5,16 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
-
-func createReplyMessage(text string, replyToMsgID string, senderJID string, externalAdReply *waE2E.ContextInfo_ExternalAdReplyInfo) *waE2E.Message {
-
-	remoteJID := senderJID
-
-	return &waE2E.Message{
-		ExtendedTextMessage: &waE2E.ExtendedTextMessage{
-			Text: &text,
-			ContextInfo: &waE2E.ContextInfo{
-				StanzaID:                &replyToMsgID,
-				Participant:             &senderJID,
-				RemoteJID:               &remoteJID,
-				ExternalAdReply:         externalAdReply,
-
-				Expiration:              nil,
-				EphemeralSettingTimestamp: nil,
-				ForwardingScore:         nil,
-				IsForwarded:             nil,
-			},
-		},
-	}
-}
-
-
-func createExternalAdReply(title, body, thumbnailURL, sourceURL string) *waE2E.ContextInfo_ExternalAdReplyInfo {
-	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
-	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
-	showAdAttribution := true
-	renderLargerThumbnail := true
-
-	return &waE2E.ContextInfo_ExternalAdReplyInfo{
-		Title:                 &title,
-		Body:                  &body,
-		MediaType:             &mediaType,
-		ThumbnailURL:          &thumbnailURL,
-		SourceURL:             &sourceURL,
-		ShowAdAttribution:     &showAdAttribution,
-		RenderLargerThumbnail: &renderLargerThumbnail,
-		AdType:                &adType,
-	}
-}
+const (
+	menuTitle        = "GOWA-BOT"
+	menuDescription  = "WhatsApp Bot with Gowa Library"
+	menuSourceURL    = "https://github.com/jrevanaldi-ai/gowa"
+	menuThumbnailURL = "https://files.catbox.moe/1xnz38.jpg"
+)
 
 
 var MenuMetadata = &lib.CommandMetadata{
@@ -92,7 +57,8 @@ func MenuHandler(ctx *lib.CommandContext) error {
 
 
 	var menuBuilder strings.Builder
-	menuBuilder.WriteString("GOWA-BOT\n\n")
+	menuBuilder.WriteString(menuSourceURL)
+	menuBuilder.WriteString("\n\nGOWA-BOT\n\n")
 
 
 	for _, tag := range tags {
@@ -120,17 +86,18 @@ func MenuHandler(ctx *lib.CommandContext) error {
 
 	message := menuBuilder.String()
 
-
-	externalAdReply := createExternalAdReply(
-		"GOWA-BOT",
-		"WhatsApp Bot with Gowa Library",
-		"https://mmg.whatsapp.net/v/t61.43035-24/671979759_1904345523547440_1984204585705255709_n.enc?ccb=11-4&oh=01_Q5Aa4gFYJT0v_1qteOZkfYd_8QlMWGIlArpeUHR3LkCD2sNJ0A&oe=6A257F0A&_nc_sid=5e03e0&mms3=true",
-		"https://github.com/jrevanaldi-ai/gowa",
+	thumbBytes, thumbW, thumbH := helper.FetchThumbnailMeta(menuThumbnailURL)
+	replyMsg := helper.CreateLinkPreviewReplyWithSize(
+		message,
+		menuTitle,
+		menuDescription,
+		menuSourceURL,
+		thumbBytes,
+		thumbW, thumbH,
+		ctx.MessageID,
+		ctx.Sender.String(),
+		ctx.Chat.String(),
 	)
-
-
-	replyMsg := createReplyMessage(message, ctx.MessageID, ctx.Sender.String(), externalAdReply)
-
 
 	_, err := ctx.SendMessage(replyMsg)
 	if err != nil {

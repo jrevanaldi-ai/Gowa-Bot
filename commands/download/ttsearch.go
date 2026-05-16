@@ -175,34 +175,23 @@ func sendTTSearchVideo(ctx *lib.CommandContext, item TTSearchItem, index int, to
 
 
 	senderStr := ctx.Sender.String()
-	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
-	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
-	showAd := true
-	renderLarge := true
+	thumbBytes := helper.FetchThumbnail(item.Cover)
 
 	videoMsg := &waE2E.Message{
 		VideoMessage: &waE2E.VideoMessage{
-			URL:           proto.String(uploadResp.URL),
-			DirectPath:    proto.String(uploadResp.DirectPath),
-			Mimetype:      proto.String("video/mp4"),
-			Caption:       proto.String(caption),
-			FileSHA256:    uploadResp.FileSHA256,
-			FileEncSHA256: uploadResp.FileEncSHA256,
-			FileLength:    proto.Uint64(uploadResp.FileLength),
-			MediaKey:      uploadResp.MediaKey,
+			URL:               proto.String(uploadResp.URL),
+			DirectPath:        proto.String(uploadResp.DirectPath),
+			Mimetype:          proto.String("video/mp4"),
+			Caption:           proto.String(caption),
+			FileSHA256:        uploadResp.FileSHA256,
+			FileEncSHA256:     uploadResp.FileEncSHA256,
+			FileLength:        proto.Uint64(uploadResp.FileLength),
+			MediaKey:          uploadResp.MediaKey,
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
-			Seconds:       proto.Uint32(0),
-			GifPlayback:   proto.Bool(false),
+			Seconds:           proto.Uint32(0),
+			GifPlayback:       proto.Bool(false),
+			JPEGThumbnail:     thumbBytes,
 			ContextInfo: &waE2E.ContextInfo{
-				ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
-					Title:                 proto.String("TikTok Search"),
-					Body:                  proto.String(fmt.Sprintf("%s - %s", author, views)),
-					MediaType:             &mediaType,
-					ThumbnailURL:          &item.Cover,
-					ShowAdAttribution:     &showAd,
-					RenderLargerThumbnail: &renderLarge,
-					AdType:                &adType,
-				},
 				StanzaID:    &ctx.MessageID,
 				Participant: &senderStr,
 			},

@@ -20,7 +20,7 @@ import (
 
 var PlayMetadata = &lib.CommandMetadata{
 	Cmd:       "play",
-	Tag:       "download",
+	Tag:       "play",
 	Desc:      "Download dan kirim audio dari YouTube",
 	Example:   ".play Multo Cup of Joe",
 	Hidden:    false,
@@ -29,17 +29,38 @@ var PlayMetadata = &lib.CommandMetadata{
 }
 
 
+type PlayChannel struct {
+	Name string
+}
+
+func (c *PlayChannel) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '"' {
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		c.Name = s
+		return nil
+	}
+	var obj struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return err
+	}
+	c.Name = obj.Name
+	return nil
+}
+
 type PlayResponse struct {
 	Success bool   `json:"success"`
 	Author  string `json:"author"`
 	Result  struct {
-		Title     string `json:"title"`
-		Thumbnail string `json:"thumbnail"`
-		URL       string `json:"url_original"`
-		SourceURL string `json:"source_url"`
-		Channel   struct {
-			Name string `json:"name"`
-		} `json:"channel"`
+		Title     string      `json:"title"`
+		Thumbnail string      `json:"thumbnail"`
+		URL       string      `json:"url_original"`
+		SourceURL string      `json:"source_url"`
+		Channel   PlayChannel `json:"channel"`
 		Downloads []struct {
 			Type     string `json:"type"`
 			Quality  string `json:"quality"`
@@ -127,53 +148,28 @@ func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 		return fmt.Errorf("failed to upload audio: %w", err)
 	}
 
-	duration := ""
+	var durationSeconds uint32
 	for _, d := range result.Downloads {
 		if d.Duration != "" {
-			duration = d.Duration
+			durationSeconds = parseDuration(d.Duration)
 			break
 		}
 	}
-	durationSeconds := parseDuration(duration)
 
-	sourceURL := result.URL
-	if sourceURL == "" {
-		sourceURL = result.SourceURL
-	}
-
-	senderStr := ctx.Sender.String()
-	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
-	adType := waE2E.ContextInfo_ExternalAdReplyInfo_CTWA
-	showAd := true
-	renderLarge := true
 	ptt := false
 
 	audioMsg := &waE2E.Message{
 		AudioMessage: &waE2E.AudioMessage{
-			URL:           proto.String(uploadResp.URL),
-			DirectPath:    proto.String(uploadResp.DirectPath),
-			Mimetype:      proto.String("audio/mpeg"),
-			PTT:           &ptt,
-			FileSHA256:    uploadResp.FileSHA256,
-			FileEncSHA256: uploadResp.FileEncSHA256,
-			FileLength:    proto.Uint64(uploadResp.FileLength),
-			MediaKey:      uploadResp.MediaKey,
+			URL:               proto.String(uploadResp.URL),
+			DirectPath:        proto.String(uploadResp.DirectPath),
+			Mimetype:          proto.String("audio/mpeg"),
+			PTT:               &ptt,
+			FileSHA256:        uploadResp.FileSHA256,
+			FileEncSHA256:     uploadResp.FileEncSHA256,
+			FileLength:        proto.Uint64(uploadResp.FileLength),
+			MediaKey:          uploadResp.MediaKey,
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
-			Seconds:       proto.Uint32(durationSeconds),
-			ContextInfo: &waE2E.ContextInfo{
-				ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
-					Title:                 &result.Title,
-					Body:                  proto.String(fmt.Sprintf("%s • %s", result.Channel.Name, duration)),
-					MediaType:             &mediaType,
-					ThumbnailURL:          &result.Thumbnail,
-					SourceURL:             &sourceURL,
-					ShowAdAttribution:     &showAd,
-					RenderLargerThumbnail: &renderLarge,
-					AdType:                &adType,
-				},
-				StanzaID:    &ctx.MessageID,
-				Participant: &senderStr,
-			},
+			Seconds:           proto.Uint32(durationSeconds),
 		},
 	}
 
