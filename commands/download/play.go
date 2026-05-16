@@ -30,18 +30,28 @@ var PlayMetadata = &lib.CommandMetadata{
 
 
 type PlayResponse struct {
-	Creator string `json:"creator"`
-	Source  string `json:"source"`
-	Status  bool   `json:"status"`
+	Success bool   `json:"success"`
+	Author  string `json:"author"`
 	Result  struct {
 		Title     string `json:"title"`
-		Channel   string `json:"channel"`
 		Thumbnail string `json:"thumbnail"`
-		Duration  string `json:"duration"`
-		VideoID   string `json:"videoId"`
-		URL       string `json:"url"`
-		Download  string `json:"download"`
-		Format    string `json:"format"`
+		URL       string `json:"url_original"`
+		SourceURL string `json:"source_url"`
+		Channel   struct {
+			Name string `json:"name"`
+		} `json:"channel"`
+		Downloads []struct {
+			Type     string `json:"type"`
+			Quality  string `json:"quality"`
+			Ext      string `json:"ext"`
+			Duration string `json:"duration"`
+			URL      string `json:"url"`
+		} `json:"downloads"`
+		Media struct {
+			MediaExtension string `json:"mediaExtension"`
+			MediaUrl       string `json:"mediaUrl"`
+			Quality        string `json:"quality"`
+		} `json:"media"`
 	} `json:"result"`
 }
 
@@ -77,7 +87,7 @@ func PlayHandler(ctx *lib.CommandContext) error {
 		return err
 	}
 
-	apiURL := "https://api.azbry.com/api/download/ytplay2?q=" + url.QueryEscape(query)
+	apiURL := "https://api.yardansh.com/downloader/youtube-play?q=" + url.QueryEscape(query)
 
 	playResp, err := fetchPlayAPI(apiURL)
 	if err != nil {
@@ -88,7 +98,7 @@ func PlayHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	if !playResp.Status {
+	if !playResp.Success || playResp.Result.Media.MediaUrl == "" {
 		errorMsg := "Audio tidak ditemukan.\n\n" +
 			"- Coba dengan kata kunci lain\n" +
 			"- Pastikan judul benar"
@@ -104,8 +114,7 @@ func PlayHandler(ctx *lib.CommandContext) error {
 func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 	result := data.Result
 
-
-	audioData, err := downloadFileFast(result.Download)
+	audioData, err := downloadFileFast(result.Media.MediaUrl)
 	if err != nil {
 		errorMsg := "Gagal download audio.\n\n" +
 			fmt.Sprintf("Error: %s", err.Error())
@@ -113,15 +122,24 @@ func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 		return nil
 	}
 
-
 	uploadResp, err := ctx.Client.Upload(context.Background(), audioData, gowa.MediaAudio)
 	if err != nil {
 		return fmt.Errorf("failed to upload audio: %w", err)
 	}
 
+	duration := ""
+	for _, d := range result.Downloads {
+		if d.Duration != "" {
+			duration = d.Duration
+			break
+		}
+	}
+	durationSeconds := parseDuration(duration)
 
-	durationSeconds := parseDuration(result.Duration)
-
+	sourceURL := result.URL
+	if sourceURL == "" {
+		sourceURL = result.SourceURL
+	}
 
 	senderStr := ctx.Sender.String()
 	mediaType := waE2E.ContextInfo_ExternalAdReplyInfo_IMAGE
@@ -145,10 +163,10 @@ func sendPlayAudio(ctx *lib.CommandContext, data *PlayResponse) error {
 			ContextInfo: &waE2E.ContextInfo{
 				ExternalAdReply: &waE2E.ContextInfo_ExternalAdReplyInfo{
 					Title:                 &result.Title,
-					Body:                  proto.String(fmt.Sprintf("%s • %s", result.Channel, result.Duration)),
+					Body:                  proto.String(fmt.Sprintf("%s • %s", result.Channel.Name, duration)),
 					MediaType:             &mediaType,
 					ThumbnailURL:          &result.Thumbnail,
-					SourceURL:             &result.URL,
+					SourceURL:             &sourceURL,
 					ShowAdAttribution:     &showAd,
 					RenderLargerThumbnail: &renderLarge,
 					AdType:                &adType,
@@ -182,8 +200,8 @@ func fetchPlayAPI(apiURL string) (*PlayResponse, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-	req.Header.Set("Referer", "https://api.azbry.com/")
-	req.Header.Set("Origin", "https://api.azbry.com")
+	req.Header.Set("Referer", "https://api.yardansh.com/")
+	req.Header.Set("Origin", "https://api.yardansh.com")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -218,6 +236,12 @@ func min(a, b int) int {
 func parseDuration(duration string) uint32 {
 
 	parts := splitString(duration, ":")
+	if len(parts) == 3 {
+		hours := parseUint(parts[0])
+		minutes := parseUint(parts[1])
+		seconds := parseUint(parts[2])
+		return uint32(hours*3600 + minutes*60 + seconds)
+	}
 	if len(parts) == 2 {
 		minutes := parseUint(parts[0])
 		seconds := parseUint(parts[1])

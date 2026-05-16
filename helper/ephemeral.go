@@ -98,7 +98,7 @@ func (h *EphemeralHelper) fetchGroupConfig(ctx context.Context, jid types.JID) (
 	config.IsEphemeral = groupInfo.IsEphemeral
 	config.DisappearingTimer = groupInfo.DisappearingTimer
 
-	h.Logger.Info("Group %s - Ephemeral: %v, Timer: %d seconds",
+	h.Logger.Debug("Group %s - Ephemeral: %v, Timer: %d seconds",
 		jid.String(), config.IsEphemeral, config.DisappearingTimer)
 
 	return config, nil
@@ -140,7 +140,7 @@ func (h *EphemeralHelper) WrapMessageWithEphemeral(ctx context.Context, jid type
 	}
 
 
-	h.Logger.Info("Wrapping message with ephemeral timer: %d seconds", config.DisappearingTimer)
+	h.Logger.Debug("Wrapping message with ephemeral timer: %d seconds", config.DisappearingTimer)
 
 
 	contextInfo := &waE2E.ContextInfo{

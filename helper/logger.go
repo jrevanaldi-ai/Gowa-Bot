@@ -85,21 +85,48 @@ func (l *Logger) Error(format string, v ...interface{}) {
 
 
 func (l *Logger) Debug(format string, v ...interface{}) {
-	msg := format
-	if len(v) > 0 {
-		msg = fmt.Sprintf(format, v...)
-	}
-	fmt.Printf("%s[%s] %s[DEBUG]%s %s\n", ColorGray, formatTimestamp(), ColorPurple, ColorReset, msg)
+
 }
 
 
-func (l *Logger) Message(pushName, number, cmd, chatType string) {
-	fmt.Printf("%s[%s] %s[MESSAGE]%s %s | %s | %s | %s\n",
+func (l *Logger) Message(pushName, number, chatType, feature, mediaSize string) {
+	if pushName == "" {
+		pushName = "-"
+	}
+	if mediaSize == "" {
+		mediaSize = "-"
+	}
+	fmt.Printf("%s[%s] %s[MESSAGE]%s\n"+
+		"  %sName       :%s %s\n"+
+		"  %sNomor      :%s %s\n"+
+		"  %sChat       :%s %s\n"+
+		"  %sFitur Uses :%s %s\n"+
+		"  %sMedia Size :%s %s\n",
 		ColorGray, formatTimestamp(), ColorBoldCyan, ColorReset,
-		ColorWhite+pushName+ColorReset,
-		ColorYellow+number+ColorReset,
-		ColorGreen+cmd+ColorReset,
-		ColorBlue+chatType+ColorReset)
+		ColorCyan, ColorReset, ColorWhite+pushName+ColorReset,
+		ColorCyan, ColorReset, ColorYellow+number+ColorReset,
+		ColorCyan, ColorReset, ColorBlue+chatType+ColorReset,
+		ColorCyan, ColorReset, ColorGreen+feature+ColorReset,
+		ColorCyan, ColorReset, ColorPurple+mediaSize+ColorReset,
+	)
+}
+
+
+func HumanSize(n uint64) string {
+	if n == 0 {
+		return "-"
+	}
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := uint64(unit), 0
+	for n2 := n / unit; n2 >= unit; n2 /= unit {
+		div *= unit
+		exp++
+	}
+	suffix := []string{"KB", "MB", "GB", "TB"}[exp]
+	return fmt.Sprintf("%.2f %s", float64(n)/float64(div), suffix)
 }
 
 

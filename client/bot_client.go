@@ -331,7 +331,7 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 				if isAIReply {
 					trigger = "lune (reply)"
 				}
-				b.Logger.Message(evt.Info.PushName, evt.Info.Sender.String(), trigger, chatType)
+				b.Logger.Message(evt.Info.PushName, evt.Info.Sender.User, chatType, trigger, extractMediaSize(evt.Message))
 
 				cmdCtx := &lib.CommandContext{
 					Ctx:                   context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
@@ -383,9 +383,10 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 	}
 	b.Logger.Message(
 		evt.Info.PushName,
-		evt.Info.Sender.String(),
-		cmd,
+		evt.Info.Sender.User,
 		chatType,
+		cmd,
+		extractMediaSize(evt.Message),
 	)
 
 	handler, ok := b.Registry.GetHandler(cmd)
@@ -472,6 +473,28 @@ func (b *BotClient) handleExecCommand(ctx context.Context, evt *events.Message, 
 	if err := handler(cmdCtx); err != nil {
 		b.Logger.Error("Exec command error: %v", err)
 	}
+}
+
+func extractMediaSize(m *waE2E.Message) string {
+	if m == nil {
+		return "-"
+	}
+	var size uint64
+	switch {
+	case m.ImageMessage != nil && m.ImageMessage.FileLength != nil:
+		size = *m.ImageMessage.FileLength
+	case m.VideoMessage != nil && m.VideoMessage.FileLength != nil:
+		size = *m.VideoMessage.FileLength
+	case m.AudioMessage != nil && m.AudioMessage.FileLength != nil:
+		size = *m.AudioMessage.FileLength
+	case m.DocumentMessage != nil && m.DocumentMessage.FileLength != nil:
+		size = *m.DocumentMessage.FileLength
+	case m.StickerMessage != nil && m.StickerMessage.FileLength != nil:
+		size = *m.StickerMessage.FileLength
+	default:
+		return "-"
+	}
+	return helper.HumanSize(size)
 }
 
 func (b *BotClient) parseCommandWithOwner(msg string, isOwner bool, forcePrefix bool) (string, []string) {

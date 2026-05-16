@@ -32,7 +32,7 @@ The flow on every WhatsApp message: `gowa.Client` event → `BotClient.EventHand
 - `processMessage` recursively unwraps `EditedMessage`, `EphemeralMessage`, `ViewOnceMessage[V2]`, and `DocumentWithCaptionMessage` so handlers see the inner payload.
 - Self-mode + IsFromMe gates: non-owner self-messages are always dropped; in public mode (default) IsFromMe is dropped unless owner; toggle via `.setmode`.
 - Ban checks (`DBManager.IsBanned`) run before dispatch for non-owners — both group JID and user JID.
-- Special case: any message containing the substring `"lune"` (case-insensitive) routes to the `lune` AI handler even without a command prefix.
+- Special case: any message containing the substring `"lune"` (case-insensitive) routes to the `lune` AI handler even without a command prefix. Replies to a previous AI response are also routed to `lune` via `helper.IsAIReply` (cache-tracked).
 
 ### Adding a command
 1. Create `commands/<category>/<name>.go` defining `<Name>Metadata *lib.CommandMetadata` and `<Name>Handler(ctx *lib.CommandContext) error`.

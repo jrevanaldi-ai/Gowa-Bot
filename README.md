@@ -154,24 +154,29 @@ Saat pertama kali menjalankan bot, Anda perlu melakukan **pairing**:
 
 Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`). Owner dapat menggunakan command **tanpa prefix**.
 
+> 💡 **Kategori (tag) di `.menu`** mengikuti field `Tag` pada metadata command. Tag yang sekarang dipakai: `main`, `utility`, `download`, `search`, `owner`, `jadibot`, `debug`. `.menu` menampilkan tag-nya secara UPPER-CASE dan sorted alfabet.
+
 ### 🛠️ Utility
 
 | Command | Alias | Deskripsi | Contoh |
 |---------|-------|-----------|--------|
 | `.ping` | `.p` | Cek latency bot | `.ping` |
+| `.lune` | - | Tanya AI Claude | `.lune apa itu Go?` |
+| `.lune reset` | - | Reset history percakapan AI | `.lune reset` |
 
-### 📋 General
+### 📋 Main
 
 | Command | Alias | Deskripsi | Contoh |
 |---------|-------|-----------|--------|
 | `.menu` | `.m`, `.h` | Tampilkan daftar command | `.menu` |
-| `.help` | `.info` | Lihat detail command | `.help ping` |
+| `.help` | `.info`, `.command` | Lihat detail command | `.help ping` |
 | `.getpp` | `.pp` | Ambil foto profil user | `.getpp @user` |
 | `.donasi` | `.donate` | Buat QRIS donasi (butuh MustikaPay) | `.donasi 10000` |
 | `.cekdonasi` | `.checkdonate` | Cek status donasi | `.cekdonasi <refno>` |
-| `.lune` | - | Tanya AI Claude | `.lune apa itu Go?` |
 
-> 💬 **Keyword `lune`:** Pesan apa pun yang mengandung kata "lune" (tanpa prefix sekalipun) akan otomatis dijawab oleh AI. Contoh: `"hai lune apa kabar?"`
+> 💬 **Trigger AI tanpa prefix:**
+> - **Keyword `lune`:** pesan apa pun yang mengandung kata "lune" (case-insensitive, tanpa prefix sekalipun) otomatis dijawab AI. Contoh: `"hai lune apa kabar?"`
+> - **Reply ke pesan AI:** balas pesan dari bot AI (dalam 30 menit terakhir, tracked via cache) juga otomatis dilanjutkan sebagai percakapan AI tanpa perlu nulis `lune` lagi.
 
 ### ⬇️ Download
 
@@ -181,23 +186,31 @@ Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`).
 | `.spotify` | - | Download dari Spotify | `.spotify <url>` |
 | `.instagram` | - | Download Instagram post/reel | `.instagram <url>` |
 | `.tiktok` | - | Download video TikTok | `.tiktok <url>` |
-| `.ttsearch` | - | Search video TikTok | `.ttsearch keyword` |
 | `.github` | - | Info / download repo GitHub | `.github user/repo` |
+
+### 🔍 Search
+
+| Command | Alias | Deskripsi | Contoh |
+|---------|-------|-----------|--------|
+| `.ttsearch` | - | Search video TikTok | `.ttsearch keyword` |
 
 ### 🔐 Owner Only
 
 | Command | Alias | Deskripsi | Contoh |
 |---------|-------|-----------|--------|
-| `$` | `exec` | Eksekusi shell command | `$ls -la` |
-| `>>` | `ev`, `eval` | Eksekusi kode Go runtime (yaegi) | `>> return ctx.Chat.String()` |
-| `.setmode` | `.mode` | Ganti mode bot (self/public) | `.setmode self` |
+| `$<cmd>` | - | Eksekusi shell command (reserved prefix) | `$ls -la` |
+| `>>` / `.eval` | `ev` | Eksekusi kode Go runtime (yaegi) | `>> return ctx.Chat.String()` |
+| `.setmode` | - | Ganti mode bot (self/public) | `.setmode self` |
 | `.setprefix` | - | Ganti prefix command | `.setprefix !` |
 | `.infoserver` | - | Info server (CPU/RAM/uptime) | `.infoserver` |
 | `.react` | - | Reaksi emoji ke pesan | `.react ❤️` |
+| `.join` | `.joingrup`, `.joingroup` | Join grup via invite link | `.join https://chat.whatsapp.com/ABC123` |
 | `.bangroup` | - | Ban group dari pemakaian bot | `.bangroup` |
 | `.unbangroup` | - | Unban group | `.unbangroup` |
 | `.banuser` | - | Ban user | `.banuser @user` |
 | `.unbanuser` | - | Unban user | `.unbanuser @user` |
+
+> 💡 Owner dapat memanggil command tanpa prefix `.` (kecuali pesan `IsFromMe` — anti-loop). Prefix `$` di-reserve khusus untuk `exec` dan tidak bisa diganti via `.setprefix`.
 
 ### 🤝 Jadibot (Multi-Bot)
 
@@ -240,25 +253,54 @@ Bot ini memiliki 2 mode operasi:
 Kirim: .menu
 
 Output:
-╭───⦿ GOWA-BOT ⦿───
-│
-│ *UTILITY:*
-│   • ping (p)
-│
-│ *GENERAL:*
-│   • help (info)
-│   • getpp (pp)
-│   • donasi (donate)
-│   • lune
-│
-│ *DOWNLOAD:*
-│   • play
-│   • spotify
-│   • instagram
-│   • tiktok
-│
-╰────────────────
+GOWA-BOT
+
+DEBUG:
+- checkephemeral (ce)
+
+DOWNLOAD:
+- github
+- instagram
+- play
+- spotify
+- tiktok
+
+JADIBOT:
+- jadibot
+- listjadibot
+- pausejadibot
+- removejadibot
+- resumejadibot
+- stopjadibot
+
+MAIN:
+- cekdonasi (checkdonate)
+- donasi (donate)
+- getpp (pp)
+- help (info)
+
+OWNER:
+- bangroup
+- banuser
+- eval (ev)
+- exec
+- infoserver
+- join (joingrup)
+- react
+- setmode
+- setprefix
+- unbangroup
+- unbanuser
+
+SEARCH:
+- ttsearch
+
+UTILITY:
+- lune
+- ping (p)
 ```
+
+> Tag di-sort alfabetis dan command di tiap tag juga sorted. Hanya command pertama dari tiap meta yang ditampilkan dengan alias pertama dalam tanda kurung.
 
 </details>
 
@@ -268,14 +310,19 @@ Output:
 ```
 Kirim: .ping
 
-Output:
-🏓 Pong!
+Output (dikirim pertama):
+Pong
 
-┌─⦿ Info Bot
-│ • Latency: 45 ms
-│ • Status: Online ✓
-│ • Uptime: 00:15:32
-└──────────────
+Latency: calculating...
+Status: Online
+Uptime: 00:15:32
+
+Lalu di-edit otomatis jadi:
+Pong
+
+Latency: 45 ms
+Status: Online
+Uptime: 00:15:32
 ```
 
 </details>
@@ -284,14 +331,23 @@ Output:
 <summary><b>🧠 AI Lune</b></summary>
 
 ```
+Trigger 1 — pakai command:
 Kirim: .lune jelaskan apa itu goroutine
 
-atau cukup:
+Trigger 2 — keyword:
 Kirim: hey lune, apa kabar?
+
+Trigger 3 — reply ke pesan AI sebelumnya (auto-continue):
+Reply pesan bot AI dengan teks apa saja → otomatis dilanjut sebagai percakapan AI
+
+Reset history percakapan:
+Kirim: .lune reset
 
 Output:
 [Respon AI Claude]
 ```
+
+> 🔒 History percakapan disimpan per-user di in-memory cache dengan TTL **30 menit**, max **15 pesan terakhir**. Tracking reply juga TTL 30 menit dan disimpan per chat JID.
 
 </details>
 
@@ -348,17 +404,17 @@ Variable pre-bound: `ctx` (CommandContext), `c` (gowa.Client), `db` (DatabaseMan
 Kirim: .help ping
 
 Output:
-╭──⦿ HELP: PING ⦿
-│
-│  Category: Utility
-│  Description: Cek respon bot dan latency
-│  Command: .ping
-│  Aliases: .p
-│  Example: .ping
-│  Access: Public
-│
-╰──────────────────────
+HELP: PING
+
+Category: Utility
+Description: Cek respon bot dan latency
+Command: .ping
+Aliases: .p
+Example: .ping
+Access: Public
 ```
+
+> `.help` tanpa argumen akan fallback ke `.menu`.
 
 </details>
 
@@ -420,10 +476,12 @@ gowa-bot/
 │   ├── logger.go             # Logger berwarna
 │   ├── cache.go              # Cache TTL in-memory
 │   ├── ephemeral.go          # Helper pesan ephemeral
-│   ├── message.go            # Builder reply message
+│   ├── message.go            # Builder reply message (CreateSimpleReply)
 │   ├── database.go           # SQLite manager (jadibot/banned/donasi)
 │   ├── session_manager.go    # Jadibot session manager
 │   ├── ai.go                 # Claude AI service
+│   ├── ai_reply.go           # Tracking message-ID balasan AI (cache 30 menit)
+│   ├── url.go                # URL utilities (ExtractWhatsAppInviteCode, dll)
 │   └── mustikapay.go         # MustikaPay QRIS integration
 │
 ├── 📂 lib/
@@ -492,24 +550,29 @@ WhatsApp Event
     ↓
 BotClient.EventHandler (client/bot_client.go)
     ↓
-processMessage()
+HandleMessage (goroutine) → processMessage()
     ├─ Cek self-mode & IsFromMe
-    ├─ Ekstrak teks dari semua tipe pesan
-    ├─ Unwrap edited/ephemeral/view-once
-    ├─ Cek ban (skip kalau owner)
-    ├─ Parse command (prefix / $ / owner-tanpa-prefix / keyword "lune")
+    ├─ Ekstrak teks dari semua tipe pesan (text/image caption/video caption/dll)
+    ├─ Unwrap edited / ephemeral / view-once / document-with-caption (recursive)
+    ├─ Cek ban via DBManager.IsBanned (skip kalau owner) — cek group JID & user JID
+    ├─ Special: $<cmd> oleh owner → handleExecCommand (langsung ke handler `exec`)
+    ├─ Extract reply context (StanzaID + Participant + QuotedMessage text) + mentions
+    ├─ parseCommandWithOwner — prefix list / owner-tanpa-prefix (skip kalau IsFromMe)
+    ├─ Fallback: kalau bukan command tapi mengandung "lune" atau reply ke pesan AI → handler `lune`
     ├─ Validasi OwnerOnly
-    └─ Jalankan handler dengan CommandContext
+    └─ Jalankan handler dengan CommandContext (Client, BotClient, Sender, Chat, Args, ReplyMessage, Mentions, EphemeralWrapper)
 ```
 
 Untuk detail teknis lebih lanjut, lihat **[CLAUDE.md](CLAUDE.md)**.
 
 ### Tips Development
 
-- **Toolchain Go:** `go.mod` declare `go 1.26` tapi project tested di 1.21+. Sesuaikan dengan environment Anda.
-- **Fork Gowa:** Direktori `gowa-lib/` adalah fork lokal — edit di sana langsung mempengaruhi bot.
-- **Session DB:** Jangan hapus `gowa-bot.db` saat bot jalan, session WhatsApp akan hilang.
-- **Cyclic import:** Kalau bikin command yang butuh akses ke `BotClient`, pakai `lib.BotClientInterface`, jangan import `client/` langsung.
+- **Toolchain Go:** `go.mod` declare `go 1.26`, README minimal 1.21+, CI (`.github/workflows/go.yml`) pinned 1.20. Kalau `go build` gagal, cek versi Go sebelum nuduh bug kode.
+- **Fork Gowa:** Direktori `gowa-lib/` adalah fork lokal (lihat `replace` di `go.mod`). Edit di sana langsung mempengaruhi bot — `go mod tidy` tidak akan pull versi remote.
+- **Session DB:** Jangan hapus `gowa-bot.db` saat bot jalan, session WhatsApp **dan** data app (jadibots/banned/donations) ada di file yang sama.
+- **Cyclic import:** `client/` import `commands/owner` (untuk `ParseExecCommand`). Jangan bikin `commands/owner` import `client/`. Pakai `lib.BotClientInterface` / `lib.JadibotSessionManagerInterface` kalau butuh akses.
+- **Jadibot client factory:** Saat bikin variasi `BotClient` untuk jadibot, gunakan `ClientFactory` closure di `main.go` — pola ini mencegah cycle antara `helper/` ↔ `client/`.
+- **Owner matching di jadibot:** Child jadibot dibuat dengan list owner kosong; deteksi owner di child hanya mengandalkan match `Client.Store.ID.User` (alias: "owner = nomor jadibot itu sendiri").
 
 ---
 
