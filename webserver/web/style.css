@@ -173,22 +173,10 @@ a:hover {
 .brand-mark {
     width: 28px;
     height: 28px;
-    border-radius: var(--radius-sm);
-    background:
-        radial-gradient(circle at 30% 20%, var(--grad-teal), transparent 55%),
-        radial-gradient(circle at 70% 30%, var(--grad-blue), transparent 50%),
-        radial-gradient(circle at 70% 80%, var(--grad-pink), transparent 50%),
-        radial-gradient(circle at 30% 80%, var(--grad-violet), transparent 50%),
-        var(--ink);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    display: block;
+    background: var(--canvas);
     user-select: none;
 }
 

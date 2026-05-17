@@ -40,9 +40,10 @@ Dengan arsitektur yang modular, Anda dapat dengan mudah menambahkan command baru
 | 💰 | **Payment Gateway** | Donasi QRIS via MustikaPay |
 | 🎵 | **Music Player** | Play audio dari YouTube & Spotify via API yardansh |
 | ⬇️ | **Downloader** | Download dari Instagram, TikTok, GitHub |
-| 🎨 | **Sticker Maker** | Buat sticker brat dari teks (auto-convert PNG → WebP 512×512) |
+| 🎨 | **Sticker Maker** | Brat (dari teks) & Image→Sticker (kirim/reply gambar dengan `.s`) — auto WebP 512×512 |
 | 🚫 | **Ban System** | Ban user atau group dari pemakaian bot |
 | 🛡️ | **Eval Sandbox** | Eksekusi kode Go runtime via yaegi (owner only) |
+| 📊 | **Web Dashboard** | Live dashboard di `:8080` — push realtime via SSE, no polling |
 
 ---
 
@@ -53,7 +54,8 @@ Sebelum memulai, pastikan Anda telah menginstal:
 - **[Go](https://go.dev/dl/)** versi 1.26 atau lebih tinggi
 - **[Git](https://git-scm.com/downloads)** untuk clone repository
 - **WhatsApp** aktif untuk pairing bot
-- **[ImageMagick](https://imagemagick.org/)** dengan dukungan WebP (binary `convert`) — wajib untuk fitur sticker `.brat`. Di Debian/Ubuntu: `sudo apt install imagemagick libwebp7`
+- **Image converter** (salah satu saja) — wajib untuk fitur sticker (`.brat`, `.s`). Helper otomatis pilih binary yang tersedia: `magick` (ImageMagick 7) → `convert` (ImageMagick 6) → `ffmpeg` (dengan `libwebp`).
+  - Debian/Ubuntu: `sudo apt install imagemagick` **atau** `sudo apt install ffmpeg`
 
 ---
 
@@ -148,6 +150,7 @@ Saat pertama kali menjalankan bot, Anda perlu melakukan **pairing**:
 | `-self` | Self mode - bot merespon pesan sendiri | `-self` |
 | `-mustika-api-key` | API key MustikaPay (override env) | `-mustika-api-key xxx` |
 | `-ai-api-key` | API key Claude AI (override env) | `-ai-api-key sk-ant-xxx` |
+| `-web-addr` | Bind address dashboard HTTP | `-web-addr :8080` atau `127.0.0.1:8080` |
 
 > 💡 Semua flag punya fallback ke environment variable dengan prefix `GOWA_BOT_`.
 
@@ -201,8 +204,9 @@ Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`).
 | Command | Alias | Deskripsi | Contoh |
 |---------|-------|-----------|--------|
 | `.brat` | - | Buat sticker brat dari teks (PNG → WebP 512×512) | `.brat halo dunia` |
+| `.sticker` | `.s`, `.stiker` | Convert gambar jadi sticker (caption / reply) | kirim gambar dengan caption `.s` atau reply gambar dengan `.s` |
 
-> 💡 `.brat` butuh `convert` (ImageMagick) terpasang di system — gambar dari API berformat PNG dan harus dikonversi ke WebP supaya WhatsApp menampilkan sebagai sticker.
+> 💡 Butuh image converter terpasang (`magick` / `convert` / `ffmpeg`). Helper di `helper/sticker.go` otomatis pilih yang tersedia — shared antara `.brat` dan `.s`.
 
 ### 🔍 Search
 
@@ -239,13 +243,46 @@ Memungkinkan user lain pairing nomor mereka sebagai sub-bot di bawah Gowa-Bot ut
 | `.stopjadibot` | - | Hentikan jadibot | `.stopjadibot <id>` |
 | `.pausejadibot` | - | Pause jadibot (bisa di-resume) | `.pausejadibot <id>` |
 | `.resumejadibot` | - | Resume jadibot yang di-pause | `.resumejadibot <id>` |
-| `.removejadibot` | - | Hapus jadibot (permanen) | `.removejadibot <id>` |
+| `.deletejadibot` | `.deljb`, `.deletejb`, `.delsession` | **User biasa** hapus jadibot **milik sendiri** (verifikasi via `OwnerJID.User`) | `.deletejadibot` (auto kalau hanya 1) atau `.deletejadibot <id>` |
+| `.removejadibot` | - | **Owner bot induk** hapus jadibot siapapun (permanen) | `.removejadibot <id>` |
+
+> 💡 Beda `.deletejadibot` vs `.removejadibot`:
+> - `.deletejadibot` → tag `owner` di registry, tapi `OwnerOnly: false`. Verifikasi ownership di handler. Cocok untuk **user kreator** hapus session-nya sendiri.
+> - `.removejadibot` → `OwnerOnly: true`. Hanya owner bot induk, bisa hapus jadibot user manapun (paksa hapus).
 
 ### 🐞 Debug
 
 | Command | Alias | Deskripsi | Contoh |
 |---------|-------|-----------|--------|
 | `.checkephemeral` | `.ce` | Cek status ephemeral group | `.checkephemeral` |
+
+---
+
+## 📊 Web Dashboard
+
+Dashboard live di `http://localhost:8080` (default; override via flag `-web-addr`). **Realtime via Server-Sent Events** — server push update setiap detik, browser tinggal subscribe `EventSource`. Tidak ada polling.
+
+### Endpoints
+
+| Endpoint | Tipe | Deskripsi |
+|---|---|---|
+| `/` | static | Embedded dashboard SPA (HTML/CSS/JS via `//go:embed web`) |
+| `/api/info` | JSON | Hostname, uptime, Go version, OS/arch, CPU, goroutines |
+| `/api/memory` | JSON | RSS, heap, stack, GC count, last GC |
+| `/api/bot` | JSON | Status koneksi WA, phone/JID, push name, self mode, prefixes |
+| `/api/commands` | JSON | Semua command registered (cmd, tag, desc, alias, owner_only) |
+| `/api/jadibots` | JSON | Daftar jadibot aktif dari DB |
+| `/api/stream` | **SSE** | Push event: `init` (semua), `tick` (dynamic tiap 1s), `commands` (tiap 10s) |
+
+### Yang ditampilkan dashboard
+
+- **Server card** — hostname, uptime, started, platform, Go version, CPU, goroutines
+- **Memory card** — RSS, heap in-use/idle, stack, sys total, total alloc (cumulative), GC count, last GC (relative)
+- **Bot card** — status (Online / Disconnected / Not paired), phone, **full JID**, push name, self mode, prefixes
+- **Jadibot table** — ID (shortened), phone, owner, status, running
+- **Commands** — di-group by tag, hover untuk lihat desc+example, command owner-only diberi warna merah
+
+UI fully responsive (320px → 1280px+), dark text di canvas terang, support touch device.
 
 ### Mode Bot
 
@@ -295,10 +332,12 @@ MAIN:
 
 MAKER:
 - brat
+- sticker (s)
 
 OWNER:
 - bangroup
 - banuser
+- deletejadibot (deljadibot)
 - eval (ev)
 - exec
 - infoserver
@@ -369,6 +408,23 @@ Output:
 ```
 
 > 🔒 History percakapan disimpan per-user di in-memory cache dengan TTL **30 menit**, max **15 pesan terakhir**. Tracking reply juga TTL 30 menit dan disimpan per chat JID.
+
+</details>
+
+<details>
+<summary><b>🎨 Sticker dari Gambar</b></summary>
+
+```
+Cara 1 — caption:
+Kirim gambar dengan caption: .s
+→ Bot balas dengan sticker 512×512
+
+Cara 2 — reply:
+Reply ke pesan gambar dengan teks: .s
+→ Bot balas dengan sticker
+```
+
+> Author di EXIF sticker pack otomatis pakai `PushName` pengirim. Cocok juga untuk gambar yang sudah lewat di chat — tinggal reply dengan `.s`.
 
 </details>
 
@@ -489,10 +545,10 @@ gowa-bot/
 ├── 📂 commands/
 │   ├── 📂 general/           # menu, help, getpp, donasi, lune (AI)
 │   ├── 📂 utility/           # ping
-│   ├── 📂 owner/             # exec, eval, setmode, setprefix, ban, dll
-│   ├── 📂 jadibot/           # multi-bot management
+│   ├── 📂 owner/             # exec, eval, setmode, setprefix, ban, deletejadibot (self-service)
+│   ├── 📂 jadibot/           # multi-bot management (jadibot, list/stop/pause/resume/remove)
 │   ├── 📂 download/          # play, spotify (tag=play), instagram, tiktok, github, ttsearch
-│   ├── 📂 maker/             # brat (sticker generator)
+│   ├── 📂 maker/             # brat (text→sticker), sticker (image→sticker)
 │   └── 📂 debug/             # checkephemeral
 │
 ├── 📂 helper/
@@ -502,6 +558,7 @@ gowa-bot/
 │   ├── message.go            # Builder reply message (CreateSimpleReply)
 │   ├── database.go           # SQLite manager (jadibot/banned/donasi)
 │   ├── session_manager.go    # Jadibot session manager
+│   ├── sticker.go            # Convert image → WebP 512×512 + EXIF metadata + upload (shared brat & .s)
 │   ├── ai.go                 # Claude AI service
 │   ├── ai_reply.go           # Tracking message-ID balasan AI (cache 30 menit)
 │   ├── url.go                # URL utilities (ExtractWhatsAppInviteCode, dll)
@@ -509,7 +566,11 @@ gowa-bot/
 │
 ├── 📂 lib/
 │   ├── types.go              # CommandRegistry, CommandContext, interfaces
-│   └── dispatcher.go         # (legacy, tidak dipakai di flow saat ini)
+│   └── dispatcher.go         # Semaphore worker pool (panic-recover) — dipakai BotClient.HandleMessage
+│
+├── 📂 webserver/
+│   ├── server.go             # HTTP server + SSE stream endpoint (`/api/stream`)
+│   └── 📂 web/               # Embedded dashboard SPA (HTML/CSS/JS + logo.png)
 │
 ├── 📂 gowa-lib/              # Fork lokal library Gowa
 └── 📂 sessions/              # Storage untuk session jadibot (auto-generated)
