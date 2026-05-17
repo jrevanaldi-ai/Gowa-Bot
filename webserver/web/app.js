@@ -168,9 +168,34 @@ function applyStatus(bot) {
     }
 }
 
+let lastUptimeSec = 0;
+let lastUptimeAt = 0;
+let lastTickAt = 0;
+
+function markLive() {
+    lastTickAt = Date.now();
+    const pill = document.getElementById('live-indicator');
+    if (pill) pill.classList.remove('stale');
+}
+
+function checkStale() {
+    if (!lastTickAt) return;
+    const pill = document.getElementById('live-indicator');
+    if (!pill) return;
+    if (Date.now() - lastTickAt > 3000) {
+        pill.classList.add('stale');
+    }
+}
+
 function applyDynamic(payload) {
     if (!payload) return;
-    if (payload.info) document.getElementById('server').innerHTML = renderServer(payload.info);
+    if (payload.info) {
+        document.getElementById('server').innerHTML = renderServer(payload.info);
+        if (typeof payload.info.uptime_seconds === 'number') {
+            lastUptimeSec = payload.info.uptime_seconds;
+            lastUptimeAt = Date.now();
+        }
+    }
     if (payload.memory) document.getElementById('memory').innerHTML = renderMemory(payload.memory);
     if (payload.bot) {
         document.getElementById('bot').innerHTML = renderBot(payload.bot);
@@ -179,7 +204,21 @@ function applyDynamic(payload) {
     if (payload.jadibots) document.getElementById('jadibots').innerHTML = renderJadibots(payload.jadibots);
     document.getElementById('last-update').textContent =
         'Live · ' + new Date().toLocaleTimeString('id-ID');
+    markLive();
 }
+
+function tickClientSide() {
+    checkStale();
+    if (!lastUptimeAt) return;
+    const drift = Math.floor((Date.now() - lastUptimeAt) / 1000);
+    const liveUptime = lastUptimeSec + drift;
+    const serverCard = document.getElementById('server');
+    if (!serverCard) return;
+    const uptimeRow = serverCard.querySelector('.kv:nth-child(2) .v');
+    if (uptimeRow) uptimeRow.textContent = fmtDuration(liveUptime);
+}
+
+setInterval(tickClientSide, 1000);
 
 function applyCommands(commands) {
     if (!commands) return;
