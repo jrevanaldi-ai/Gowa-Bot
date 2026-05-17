@@ -25,6 +25,24 @@ function fmtDuration(sec) {
     return `${s}s`;
 }
 
+function fmtRelative(isoTs) {
+    if (!isoTs) return '-';
+    const t = new Date(isoTs).getTime();
+    if (!t || t <= 0) return '-';
+    const diff = Math.floor((Date.now() - t) / 1000);
+    if (diff < 0) return 'just now';
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+}
+
+function shortID(id) {
+    if (!id) return '-';
+    if (id.length <= 12) return id;
+    return id.slice(0, 8) + '…' + id.slice(-4);
+}
+
 function kv(k, v) {
     return `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`;
 }
@@ -40,12 +58,11 @@ function renderServer(info) {
     return [
         kv('Hostname', escapeHTML(info.hostname || '-')),
         kv('Uptime', fmtDuration(info.uptime_seconds)),
-        kv('Started At', new Date(info.started_at).toLocaleString('id-ID')),
-        kv('OS', `${info.os}/${info.arch}`),
-        kv('Go', info.go_version),
+        kv('Started', new Date(info.started_at).toLocaleString('id-ID')),
+        kv('Platform', `${info.os}/${info.arch}`),
+        kv('Go', escapeHTML(info.go_version || '-')),
         kv('CPUs', info.cpus),
-        kv('Goroutines', info.goroutines),
-        kv('PID', info.pid)
+        kv('Goroutines', info.goroutines)
     ].join('');
 }
 
@@ -53,24 +70,30 @@ function renderMemory(mem) {
     if (!mem) return '<p class="empty">Tidak bisa load data memory</p>';
     return [
         kv('RSS', fmtBytes(mem.rss_mb)),
-        kv('Heap Alloc', fmtBytes(mem.heap_alloc_mb)),
         kv('Heap In-Use', fmtBytes(mem.heap_inuse_mb)),
         kv('Heap Idle', fmtBytes(mem.heap_idle_mb)),
         kv('Stack', fmtBytes(mem.stack_inuse_mb)),
         kv('Sys Total', fmtBytes(mem.sys_mb)),
-        kv('GC Count', mem.num_gc)
+        kv('Total Alloc', fmtBytes(mem.total_alloc_mb)),
+        kv('GC Count', mem.num_gc),
+        kv('Last GC', fmtRelative(mem.last_gc))
     ].join('');
 }
 
 function renderBot(bot) {
     if (!bot) return '<p class="empty">Tidak bisa load data bot</p>';
+    const statusVal = bot.connected
+        ? '<span class="pill active">Online</span>'
+        : (bot.logged_in
+            ? '<span class="pill inactive">Disconnected</span>'
+            : '<span class="pill inactive">Not paired</span>');
     return [
-        kv('Connected', bot.connected ? '<span class="pill active">Yes</span>' : '<span class="pill inactive">No</span>'),
-        kv('Logged In', bot.logged_in ? '<span class="pill active">Yes</span>' : '<span class="pill inactive">No</span>'),
+        kv('Status', statusVal),
         kv('Phone', escapeHTML(bot.phone || '-')),
+        kv('JID', `<code class="mono">${escapeHTML(bot.jid || '-')}</code>`),
         kv('Push Name', escapeHTML(bot.push_name || '-')),
         kv('Self Mode', bot.self_mode ? '<span class="pill active">On</span>' : '<span class="pill inactive">Off</span>'),
-        kv('Prefixes', (bot.prefixes || []).map(p => `<code>${escapeHTML(p)}</code>`).join(' '))
+        kv('Prefixes', (bot.prefixes || []).map(p => `<code>${escapeHTML(p)}</code>`).join(' ') || '-')
     ].join('');
 }
 
@@ -80,7 +103,7 @@ function renderJadibots(data) {
     if (!data.items || data.items.length === 0) {
         return '<p class="empty">Belum ada jadibot aktif</p>';
     }
-    let html = '<table><thead><tr><th>Phone</th><th>Owner</th><th>Status</th><th>Running</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>ID</th><th>Phone</th><th>Owner</th><th>Status</th><th>Running</th></tr></thead><tbody>';
     data.items.forEach(j => {
         const owner = (j.owner_jid || '').split('@')[0] || '-';
         const statusPill = j.status === 'active'
@@ -90,6 +113,7 @@ function renderJadibots(data) {
             ? '<span class="pill active">Yes</span>'
             : '<span class="pill inactive">No</span>';
         html += `<tr>
+            <td><code class="mono" title="${escapeHTML(j.id || '')}">${escapeHTML(shortID(j.id))}</code></td>
             <td>${escapeHTML(j.phone_number)}</td>
             <td>${escapeHTML(owner)}</td>
             <td>${statusPill}</td>

@@ -20,6 +20,7 @@ const (
 	menuDescription  = "WhatsApp Bot with Gowa Library"
 	menuLibraryURL   = "https://github.com/jrevanaldi-ai/gowa"
 	menuSourceURL    = "https://github.com/jrevanaldi-ai/Gowa-Bot"
+	menuDashboardURL = "dash.astralune.cv"
 	menuThumbnailURL = "https://camo.githubusercontent.com/bf1451d500e2f05c58357170a54a224f8c0531e5af665e89df7df1fcbbc35ebd/68747470733a2f2f66696c65732e636174626f782e6d6f652f31786e7a33382e6a7067"
 )
 
@@ -87,6 +88,8 @@ func MenuHandler(ctx *lib.CommandContext) error {
 
 		menuBuilder.WriteString("\n")
 	}
+
+	menuBuilder.WriteString(fmt.Sprintf("> Dashboard: %s\n", menuDashboardURL))
 
 	caption := strings.TrimRight(menuBuilder.String(), "\n")
 

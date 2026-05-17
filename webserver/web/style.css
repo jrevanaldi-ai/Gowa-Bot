@@ -69,6 +69,12 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "ss01", "ss02", "cv11";
+    overflow-x: hidden;
+}
+
+img, svg {
+    max-width: 100%;
+    height: auto;
 }
 
 ::selection {
@@ -165,8 +171,8 @@ a:hover {
 }
 
 .brand-mark {
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     border-radius: var(--radius-sm);
     background:
         radial-gradient(circle at 30% 20%, var(--grad-teal), transparent 55%),
@@ -174,6 +180,16 @@ a:hover {
         radial-gradient(circle at 70% 80%, var(--grad-pink), transparent 50%),
         radial-gradient(circle at 30% 80%, var(--grad-violet), transparent 50%),
         var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    user-select: none;
 }
 
 .brand-name {
@@ -432,10 +448,18 @@ a:hover {
 
 /* ============ TABLE ============ */
 
+#jadibots {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 calc(-1 * var(--space-sm));
+    padding: 0 var(--space-sm);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    min-width: 480px;
 }
 thead th {
     text-align: left;
@@ -448,6 +472,7 @@ thead th {
     letter-spacing: 0.04em;
     background: var(--canvas-soft);
     border-bottom: 1px solid var(--hairline);
+    white-space: nowrap;
 }
 tbody td {
     padding: 12px;
@@ -456,6 +481,7 @@ tbody td {
     font-family: var(--font-mono);
     font-size: 13px;
     vertical-align: middle;
+    white-space: nowrap;
 }
 tbody tr:last-child td {
     border-bottom: none;
@@ -529,36 +555,65 @@ footer {
     gap: var(--space-md);
     flex-wrap: wrap;
 }
-.footer-inner .mono.caption {
+.footer-inner .mono.caption,
+.footer-copy {
     color: var(--mute);
 }
-.footer-links {
-    display: flex;
+.footer-gh {
+    display: inline-flex;
     align-items: center;
-    gap: var(--space-sm);
-    font-size: 14px;
-}
-.footer-links a {
-    color: var(--body);
-}
-.footer-links a:hover {
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--hairline);
+    background: var(--canvas);
     color: var(--ink);
-    text-decoration: underline;
+    font-size: 13px;
+    line-height: 1;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.footer-links .sep {
-    color: var(--hairline-strong);
+.footer-gh:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--on-primary);
+    text-decoration: none;
+}
+.footer-gh svg {
+    display: block;
+}
+.footer-gh-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
 }
 
 /* ============ RESPONSIVE ============ */
+
+@media (max-width: 1024px) {
+    .grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .grid-3 .card:last-child {
+        grid-column: 1 / -1;
+    }
+}
 
 @media (max-width: 900px) {
     .grid-3 {
         grid-template-columns: 1fr;
     }
+    .grid-3 .card:last-child {
+        grid-column: auto;
+    }
     .display-xl {
         font-size: 36px;
-        line-height: 38px;
+        line-height: 40px;
         letter-spacing: -1.8px;
+    }
+    .display-md {
+        font-size: 20px;
+        line-height: 28px;
+        letter-spacing: -0.8px;
     }
     .lead {
         font-size: 16px;
@@ -573,18 +628,127 @@ footer {
     .brand-tag {
         display: none;
     }
+    .last-update {
+        display: none;
+    }
+    tbody td {
+        padding: 10px;
+    }
 }
 
-@media (max-width: 540px) {
+@media (max-width: 640px) {
+    .nav-inner {
+        height: 56px;
+    }
+    .status-pill {
+        height: 26px;
+        padding: 0 8px;
+        font-size: 11px;
+    }
     .display-xl {
         font-size: 30px;
-        line-height: 32px;
+        line-height: 34px;
         letter-spacing: -1.2px;
+    }
+    .display-md {
+        font-size: 18px;
+        line-height: 24px;
+    }
+    .display-sm {
+        font-size: 18px;
+        line-height: 24px;
+        letter-spacing: -0.4px;
+    }
+    .hero-inner {
+        padding: var(--space-2xl) var(--space-md) var(--space-lg);
+    }
+    .cta-row {
+        width: 100%;
+    }
+    .cta-row .btn-primary,
+    .cta-row .btn-secondary {
+        flex: 1 1 auto;
+        height: 38px;
+        padding: 0 14px;
+        font-size: 13px;
     }
     .card {
         padding: var(--space-md);
     }
     .content {
         padding: 0 var(--space-md) var(--space-3xl);
+    }
+    .card-header {
+        gap: var(--space-sm);
+    }
+    .cmd-list {
+        gap: 5px;
+    }
+    .cmd-item {
+        padding: 4px 9px;
+        font-size: 12px;
+    }
+    .footer-inner {
+        padding: var(--space-lg) var(--space-md);
+        gap: var(--space-sm);
+    }
+    .footer-gh-label {
+        display: none;
+    }
+    .footer-gh {
+        padding: 8px;
+        border-radius: var(--radius-full);
+    }
+}
+
+@media (max-width: 420px) {
+    .nav-inner {
+        gap: var(--space-sm);
+    }
+    .brand-name {
+        font-size: 13px;
+    }
+    .display-xl {
+        font-size: 26px;
+        line-height: 30px;
+        letter-spacing: -0.8px;
+    }
+    .kv-list .kv {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 10px 0;
+    }
+    .kv .v {
+        text-align: left;
+        width: 100%;
+        word-break: break-word;
+    }
+    .card {
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-sm);
+    }
+    .count-badge {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    .pill {
+        height: 20px;
+        padding: 0 8px;
+        font-size: 11px;
+    }
+    tbody td {
+        padding: 8px;
+        font-size: 12px;
+    }
+    thead th {
+        padding: 6px 8px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .cmd-item:hover {
+        border-color: var(--hairline);
+        background: var(--canvas-soft);
     }
 }
