@@ -128,36 +128,78 @@ function renderCommands(data) {
     return html;
 }
 
-async function refresh() {
-    const [info, memory, bot, commands, jadibots] = await Promise.all([
-        fetchJSON('/api/info'),
-        fetchJSON('/api/memory'),
-        fetchJSON('/api/bot'),
-        fetchJSON('/api/commands'),
-        fetchJSON('/api/jadibots')
-    ]);
-
-    document.getElementById('server').innerHTML = renderServer(info);
-    document.getElementById('memory').innerHTML = renderMemory(memory);
-    document.getElementById('bot').innerHTML = renderBot(bot);
-    document.getElementById('jadibots').innerHTML = renderJadibots(jadibots);
-    document.getElementById('commands').innerHTML = renderCommands(commands);
-
+function applyStatus(bot) {
     const statusEl = document.getElementById('bot-status');
+    if (!statusEl) return;
+    const label = statusEl.querySelector('.label') || statusEl;
     if (bot && bot.connected) {
-        statusEl.className = 'status connected';
-        statusEl.textContent = 'Connected';
+        statusEl.className = 'status-pill connected';
+        label.textContent = 'Connected';
     } else if (bot) {
-        statusEl.className = 'status disconnected';
-        statusEl.textContent = 'Disconnected';
+        statusEl.className = 'status-pill disconnected';
+        label.textContent = 'Disconnected';
     } else {
-        statusEl.className = 'status';
-        statusEl.textContent = 'Unknown';
+        statusEl.className = 'status-pill';
+        label.textContent = 'Unknown';
     }
-
-    document.getElementById('last-update').textContent =
-        'Updated ' + new Date().toLocaleTimeString('id-ID');
 }
 
-refresh();
-setInterval(refresh, 5000);
+function applyDynamic(payload) {
+    if (!payload) return;
+    if (payload.info) document.getElementById('server').innerHTML = renderServer(payload.info);
+    if (payload.memory) document.getElementById('memory').innerHTML = renderMemory(payload.memory);
+    if (payload.bot) {
+        document.getElementById('bot').innerHTML = renderBot(payload.bot);
+        applyStatus(payload.bot);
+    }
+    if (payload.jadibots) document.getElementById('jadibots').innerHTML = renderJadibots(payload.jadibots);
+    document.getElementById('last-update').textContent =
+        'Live · ' + new Date().toLocaleTimeString('id-ID');
+}
+
+function applyCommands(commands) {
+    if (!commands) return;
+    document.getElementById('commands').innerHTML = renderCommands(commands);
+}
+
+let es = null;
+let reconnectTimer = null;
+
+function connectStream() {
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+    if (es) {
+        try { es.close(); } catch (_) {}
+    }
+    es = new EventSource('/api/stream');
+
+    es.addEventListener('init', (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            applyDynamic(data);
+            applyCommands(data.commands);
+        } catch (_) {}
+    });
+
+    es.addEventListener('tick', (e) => {
+        try { applyDynamic(JSON.parse(e.data)); } catch (_) {}
+    });
+
+    es.addEventListener('commands', (e) => {
+        try { applyCommands(JSON.parse(e.data)); } catch (_) {}
+    });
+
+    es.onerror = () => {
+        const lu = document.getElementById('last-update');
+        if (lu) lu.textContent = 'Reconnecting…';
+        if (reconnectTimer) return;
+        reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            connectStream();
+        }, 2000);
+    };
+}
+
+connectStream();
