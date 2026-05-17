@@ -31,6 +31,7 @@ type BotClient struct {
 	SelfMode              bool
 	IsMainBot             bool
 	Prefixes              []string
+	StartedAt             time.Time
 	mu                    sync.RWMutex
 }
 
@@ -111,6 +112,7 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		JadibotSessionManager: config.JadibotSessionManager,
 		DBManager:             config.DBManager,
 		Prefixes:              prefixes,
+		StartedAt:             time.Now(),
 	}
 
 	botClient.EphemeralHelper = helper.NewEphemeralHelper(nil, 5*time.Minute)
@@ -152,6 +154,14 @@ func (b *BotClient) HandleMessage(ctx context.Context, evt *events.Message) {
 }
 
 func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
+
+	if !evt.Info.Timestamp.IsZero() && evt.Info.Timestamp.Before(b.StartedAt.Add(-5*time.Second)) {
+		b.Logger.Debug("Skip pending message from %s (ts=%s, started=%s)",
+			evt.Info.Sender.User,
+			evt.Info.Timestamp.Format(time.RFC3339),
+			b.StartedAt.Format(time.RFC3339))
+		return
+	}
 
 	b.mu.RLock()
 	selfMode := b.SelfMode

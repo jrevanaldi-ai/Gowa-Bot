@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gowa-Bot — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="nav-bar">
+        <div class="nav-inner">
+            <div class="brand">
+                <span class="brand-mark"></span>
+                <span class="brand-name">Gowa-Bot</span>
+                <span class="brand-tag">Dashboard</span>
+            </div>
+            <div class="nav-right">
+                <span class="status-pill" id="bot-status">
+                    <span class="dot"></span>
+                    <span class="label">Loading</span>
+                </span>
+                <span class="last-update mono" id="last-update">—</span>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="mesh-gradient" aria-hidden="true"></div>
+            <div class="hero-inner">
+                <span class="eyebrow mono">SYSTEM · LIVE</span>
+                <h1 class="display-xl">Live system status.</h1>
+                <p class="lead">Realtime view of the bot — memory, jadibot, registered commands, dan koneksi WhatsApp. Auto-refresh tiap 5 detik.</p>
+                <div class="cta-row">
+                    <a class="btn-primary" href="/api/info" target="_blank">View raw API</a>
+                    <a class="btn-secondary" href="https://github.com/jrevanaldi-ai/Gowa-Bot" target="_blank">Source on GitHub</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="grid grid-3">
+                <div class="card">
+                    <span class="eyebrow mono">RUNTIME</span>
+                    <h2 class="display-sm">Server.</h2>
+                    <div id="server" class="kv-list"></div>
+                </div>
+                <div class="card">
+                    <span class="eyebrow mono">MEMORY</span>
+                    <h2 class="display-sm">Memory.</h2>
+                    <div id="memory" class="kv-list"></div>
+                </div>
+                <div class="card">
+                    <span class="eyebrow mono">WHATSAPP</span>
+                    <h2 class="display-sm">Bot.</h2>
+                    <div id="bot" class="kv-list"></div>
+                </div>
+            </div>
+
+            <div class="card card-wide">
+                <div class="card-header">
+                    <div>
+                        <span class="eyebrow mono">SUB-BOTS</span>
+                        <h2 class="display-md">Jadibot active.</h2>
+                    </div>
+                    <span class="count-badge mono" id="jadibot-count">0</span>
+                </div>
+                <div id="jadibots"></div>
+            </div>
+
+            <div class="card card-wide">
+                <div class="card-header">
+                    <div>
+                        <span class="eyebrow mono">FEATURES</span>
+                        <h2 class="display-md">Commands.</h2>
+                    </div>
+                    <span class="count-badge mono" id="commands-count">0</span>
+                </div>
+                <div id="commands"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div>
+                <span class="mono caption">Auto-refresh · 5s</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/jrevanaldi-ai/Gowa-Bot" target="_blank">github.com/jrevanaldi-ai/Gowa-Bot</a>
+                <span class="sep">·</span>
+                <a href="https://github.com/jrevanaldi-ai/gowa" target="_blank">Library Gowa</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

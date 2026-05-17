@@ -185,6 +185,10 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 			MediaKey:          uploadResp.MediaKey,
 			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
 			Seconds:           proto.Uint32(durationSeconds),
+			ContextInfo: &waE2E.ContextInfo{
+				StanzaID:    proto.String(ctx.MessageID),
+				Participant: proto.String(ctx.Sender.String()),
+			},
 		},
 	}
 

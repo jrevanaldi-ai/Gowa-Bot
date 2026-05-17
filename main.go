@@ -20,6 +20,7 @@ import (
 	general "github.com/jrevanaldi-ai/gowa-bot/commands/general"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
+	"github.com/jrevanaldi-ai/gowa-bot/webserver"
 )
 
 var (
@@ -30,6 +31,7 @@ var (
 	selfMode         = flag.Bool("self", false, "Self mode - bot merespon pesan dari diri sendiri")
 	mustikaPayAPIKey = flag.String("mustika-api-key", "", "MustikaPay API Key untuk pembayaran")
 	aiAPIKey         = flag.String("ai-api-key", "", "API Key untuk AI (Claude)")
+	webAddr          = flag.String("web-addr", ":8080", "HTTP dashboard bind address (e.g. :8080 atau 127.0.0.1:8080)")
 )
 
 func main() {
@@ -126,6 +128,21 @@ func main() {
 	}
 
 	botClient.SetClient(cli)
+
+	webSrv := webserver.New(*webAddr)
+	webSrv.Registry = registry
+	webSrv.Client = cli
+	webSrv.DBManager = dbManager
+	webSrv.JadibotMgr = jadibotSessionManager
+	webSrv.GetSelfMode = botClient.GetSelfMode
+	webSrv.GetPrefixes = botClient.GetPrefixes
+
+	go func() {
+		logger.Success("Web dashboard at http://localhost%s", *webAddr)
+		if err := webSrv.Start(ctx); err != nil {
+			logger.Warning("Web server stopped: %v", err)
+		}
+	}()
 
 	logger.Success("Gowa-Bot is ready!")
 

@@ -17,9 +17,12 @@ import (
 )
 
 type cachedThumb struct {
-	Data   []byte
-	Width  uint32
-	Height uint32
+	Data       []byte
+	Width      uint32
+	Height     uint32
+	FullData   []byte
+	FullWidth  uint32
+	FullHeight uint32
 }
 
 var thumbnailCache sync.Map
@@ -38,6 +41,14 @@ func FetchThumbnailMeta(thumbURL string) ([]byte, uint32, uint32) {
 		return nil, 0, 0
 	}
 	return t.Data, t.Width, t.Height
+}
+
+func FetchImageFull(imgURL string) ([]byte, []byte, uint32, uint32) {
+	t := fetchThumbnailFull(imgURL)
+	if t == nil {
+		return nil, nil, 0, 0
+	}
+	return t.FullData, t.Data, t.FullWidth, t.FullHeight
 }
 
 func fetchThumbnailFull(thumbURL string) *cachedThumb {
@@ -74,9 +85,26 @@ func fetchThumbnailFull(thumbURL string) *cachedThumb {
 		return nil
 	}
 
-	thumb := &cachedThumb{Data: processed, Width: w, Height: h}
+	fullW, fullH := imageDimensions(raw)
+
+	thumb := &cachedThumb{
+		Data:       processed,
+		Width:      w,
+		Height:     h,
+		FullData:   raw,
+		FullWidth:  fullW,
+		FullHeight: fullH,
+	}
 	thumbnailCache.Store(thumbURL, thumb)
 	return thumb
+}
+
+func imageDimensions(raw []byte) (uint32, uint32) {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(raw))
+	if err != nil {
+		return 0, 0
+	}
+	return uint32(cfg.Width), uint32(cfg.Height)
 }
 
 func processThumbnail(raw []byte) ([]byte, uint32, uint32) {
