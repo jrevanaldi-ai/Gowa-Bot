@@ -27,6 +27,7 @@ type BotClient struct {
 	JadibotSessionManager *helper.JadibotSessionManager
 	DBManager             *helper.DatabaseManager
 	Dispatcher            *lib.Dispatcher
+	Activity              *helper.ActivityLog
 	Owners                map[string]bool
 	SelfMode              bool
 	IsMainBot             bool
@@ -106,6 +107,7 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 		Logger:                helper.NewLogger("BotClient"),
 		Cache:                 helper.NewCache(),
 		Dispatcher:            lib.NewDispatcher(maxWorkers),
+		Activity:              helper.NewActivityLog(50),
 		Owners:                owners,
 		SelfMode:              config.SelfMode,
 		IsMainBot:             config.IsMainBot,
@@ -353,6 +355,14 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 				}
 				b.Logger.Message(evt.Info.PushName, evt.Info.Sender.User, chatType, trigger, extractMediaSize(evt.Message))
 
+				b.Activity.Push(helper.ActivityEntry{
+					Command:  trigger,
+					Sender:   evt.Info.Sender.User,
+					PushName: evt.Info.PushName,
+					ChatType: chatType,
+					IsOwner:  isOwner,
+				})
+
 				cmdCtx := &lib.CommandContext{
 					Ctx:                   context.WithValue(context.WithValue(ctx, "registry", b.Registry), "gowa_client", b.Client),
 					Client:                b.Client,
@@ -410,6 +420,14 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		cmd,
 		extractMediaSize(evt.Message),
 	)
+
+	b.Activity.Push(helper.ActivityEntry{
+		Command:  cmd,
+		Sender:   evt.Info.Sender.User,
+		PushName: evt.Info.PushName,
+		ChatType: chatType,
+		IsOwner:  isOwner,
+	})
 
 	handler, ok := b.Registry.GetHandler(cmd)
 	if !ok {

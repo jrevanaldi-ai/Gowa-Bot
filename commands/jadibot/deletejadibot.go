@@ -1,4 +1,4 @@
-package owner
+package jadibot
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 
 var DeleteJadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "deletejadibot",
-	Tag:       "owner",
+	Tag:       "jadibot",
 	Desc:      "Hapus jadibot milik sendiri (stop + hapus session)",
 	Example:   ".deletejadibot atau .deletejadibot <id>",
 	Hidden:    false,
@@ -204,24 +204,4 @@ func executeDeleteJadibot(ctx *lib.CommandContext, jadibotID string, botInfo *li
 func isJadibotOwner(ownerJID string, sender types.JID) bool {
 	owner := lib.StringToJID(ownerJID)
 	return owner.User != "" && owner.User == sender.User
-}
-
-func formatJadibotStatus(status string) string {
-	switch status {
-	case "active":
-		return "Aktif"
-	case "paused":
-		return "Paused"
-	case "stopped":
-		return "Berhenti"
-	default:
-		return "Tidak Diketahui"
-	}
-}
-
-func formatBoolean(b bool) string {
-	if b {
-		return "Ya"
-	}
-	return "Tidak"
 }

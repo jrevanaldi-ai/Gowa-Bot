@@ -97,11 +97,26 @@ function renderBot(bot) {
     ].join('');
 }
 
+function renderJadibotBreakdown(data) {
+    if (!data) return '';
+    const segs = [
+        { label: 'Running',  value: data.running || 0, cls: 'seg-running' },
+        { label: 'Active',   value: data.active  || 0, cls: 'seg-active' },
+        { label: 'Paused',   value: data.paused  || 0, cls: 'seg-paused' },
+        { label: 'Stopped',  value: data.stopped || 0, cls: 'seg-stopped' }
+    ];
+    return segs.map(s =>
+        `<div class="seg ${s.cls}"><span class="seg-v mono">${s.value}</span><span class="seg-k">${s.label}</span></div>`
+    ).join('');
+}
+
 function renderJadibots(data) {
     if (!data) return '<p class="empty">Tidak bisa load data jadibot</p>';
     document.getElementById('jadibot-count').textContent = data.total;
+    const bd = document.getElementById('jadibot-breakdown');
+    if (bd) bd.innerHTML = renderJadibotBreakdown(data);
     if (!data.items || data.items.length === 0) {
-        return '<p class="empty">Belum ada jadibot aktif</p>';
+        return '<p class="empty">Belum ada jadibot</p>';
     }
     let html = '<table><thead><tr><th>ID</th><th>Phone</th><th>Owner</th><th>Status</th><th>Running</th></tr></thead><tbody>';
     data.items.forEach(j => {
@@ -118,6 +133,32 @@ function renderJadibots(data) {
             <td>${escapeHTML(owner)}</td>
             <td>${statusPill}</td>
             <td>${runningPill}</td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    return html;
+}
+
+function renderActivity(data) {
+    if (!data) return '<p class="empty">Tidak bisa load activity</p>';
+    document.getElementById('activity-count').textContent = data.total || 0;
+    if (!data.items || data.items.length === 0) {
+        return '<p class="empty">Belum ada activity tercatat</p>';
+    }
+    let html = '<table class="table-activity"><thead><tr><th>Time</th><th>Command</th><th>User</th><th>Chat</th></tr></thead><tbody>';
+    data.items.forEach(a => {
+        const t = a.timestamp ? fmtRelative(a.timestamp) : '-';
+        const fullT = a.timestamp ? new Date(a.timestamp).toLocaleString('id-ID') : '';
+        const name = (a.push_name || a.sender || '-').trim() || a.sender || '-';
+        const ownerTag = a.is_owner ? ' <span class="pill active" style="height:18px;padding:0 6px;font-size:10px">owner</span>' : '';
+        const chatTag = a.chat_type === 'Group'
+            ? '<span class="pill inactive" style="height:18px;padding:0 6px;font-size:10px">group</span>'
+            : '<span class="pill inactive" style="height:18px;padding:0 6px;font-size:10px">private</span>';
+        html += `<tr>
+            <td title="${escapeHTML(fullT)}">${escapeHTML(t)}</td>
+            <td><code class="mono">.${escapeHTML(a.command)}</code></td>
+            <td>${escapeHTML(name)}${ownerTag}</td>
+            <td>${chatTag}</td>
         </tr>`;
     });
     html += '</tbody></table>';
@@ -202,6 +243,7 @@ function applyDynamic(payload) {
         applyStatus(payload.bot);
     }
     if (payload.jadibots) document.getElementById('jadibots').innerHTML = renderJadibots(payload.jadibots);
+    if (payload.activity) document.getElementById('activity').innerHTML = renderActivity(payload.activity);
     document.getElementById('last-update').textContent =
         'Live · ' + new Date().toLocaleTimeString('id-ID');
     markLive();

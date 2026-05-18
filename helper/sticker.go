@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -169,6 +170,106 @@ func AddStickerMetadata(webp []byte, packName, packPublisher string) ([]byte, er
 	out = append(out, body...)
 
 	return out, nil
+}
+
+func ConvertVideoToAnimatedWebpSticker(input []byte) ([]byte, error) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		return nil, fmt.Errorf("ffmpeg not available — install with `apt install ffmpeg`")
+	}
+
+	inFile, err := os.CreateTemp("", "gif2sticker-in-*")
+	if err != nil {
+		return nil, fmt.Errorf("create temp input: %w", err)
+	}
+	defer os.Remove(inFile.Name())
+	if _, err := inFile.Write(input); err != nil {
+		inFile.Close()
+		return nil, fmt.Errorf("write temp input: %w", err)
+	}
+	inFile.Close()
+
+	outFile, err := os.CreateTemp("", "gif2sticker-out-*.webp")
+	if err != nil {
+		return nil, fmt.Errorf("create temp output: %w", err)
+	}
+	outPath := outFile.Name()
+	outFile.Close()
+	defer os.Remove(outPath)
+
+	filter := "fps=15,scale=512:512:force_original_aspect_ratio=decrease," +
+		"pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1"
+
+	cmd := exec.Command("ffmpeg",
+		"-hide_banner", "-loglevel", "error", "-y",
+		"-i", inFile.Name(),
+		"-vf", filter,
+		"-t", "6",
+		"-loop", "0",
+		"-an",
+		"-vcodec", "libwebp",
+		"-lossless", "0",
+		"-compression_level", "6",
+		"-q:v", "50",
+		"-preset", "default",
+		"-f", "webp",
+		outPath,
+	)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("ffmpeg animated webp: %w: %s", err, strings.TrimSpace(stderr.String()))
+	}
+
+	out, err := os.ReadFile(outPath)
+	if err != nil {
+		return nil, fmt.Errorf("read webp output: %w", err)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("ffmpeg produced empty webp")
+	}
+	return out, nil
+}
+
+func BuildAnimatedStickerFromVideo(ctx context.Context, cli *gowa.Client, videoData []byte, packName, packPublisher, replyToMsgID, senderJID, chatJID string) (*waE2E.Message, error) {
+	webpData, err := ConvertVideoToAnimatedWebpSticker(videoData)
+	if err != nil {
+		return nil, fmt.Errorf("convert animated sticker: %w", err)
+	}
+
+	if stamped, err := AddStickerMetadata(webpData, packName, packPublisher); err == nil {
+		webpData = stamped
+	}
+
+	uploadResp, err := cli.Upload(ctx, webpData, gowa.MediaImage)
+	if err != nil {
+		return nil, fmt.Errorf("upload sticker: %w", err)
+	}
+
+	remoteJID := chatJID
+	if remoteJID == "" {
+		remoteJID = senderJID
+	}
+
+	return &waE2E.Message{
+		StickerMessage: &waE2E.StickerMessage{
+			URL:               proto.String(uploadResp.URL),
+			DirectPath:        proto.String(uploadResp.DirectPath),
+			Mimetype:          proto.String("image/webp"),
+			FileSHA256:        uploadResp.FileSHA256,
+			FileEncSHA256:     uploadResp.FileEncSHA256,
+			FileLength:        proto.Uint64(uploadResp.FileLength),
+			MediaKey:          uploadResp.MediaKey,
+			MediaKeyTimestamp: proto.Int64(time.Now().Unix()),
+			Height:            proto.Uint32(512),
+			Width:             proto.Uint32(512),
+			IsAnimated:        proto.Bool(true),
+			ContextInfo: &waE2E.ContextInfo{
+				StanzaID:    proto.String(replyToMsgID),
+				Participant: proto.String(senderJID),
+				RemoteJID:   proto.String(remoteJID),
+			},
+		},
+	}, nil
 }
 
 func BuildStickerFromImage(ctx context.Context, cli *gowa.Client, imgData []byte, packName, packPublisher, replyToMsgID, senderJID, chatJID string) (*waE2E.Message, error) {

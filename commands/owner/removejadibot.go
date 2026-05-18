@@ -1,4 +1,4 @@
-package jadibot
+package owner
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 
 var RemoveJadibotMetadata = &lib.CommandMetadata{
 	Cmd:       "removejadibot",
-	Tag:       "jadibot",
+	Tag:       "owner",
 	Desc:      "Hapus jadibot secara permanen (owner only)",
 	Example:   ".removejadibot <id_jadibot>",
 	Hidden:    false,
@@ -261,4 +261,17 @@ func formatBoolean(b bool) string {
 		return "Ya"
 	}
 	return "Tidak"
+}
+
+func formatJadibotStatus(status string) string {
+	switch status {
+	case "active":
+		return "Aktif"
+	case "paused":
+		return "Paused"
+	case "stopped":
+		return "Berhenti"
+	default:
+		return "Tidak Diketahui"
+	}
 }

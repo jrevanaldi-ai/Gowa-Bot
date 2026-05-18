@@ -134,6 +134,7 @@ func main() {
 	webSrv.Client = cli
 	webSrv.DBManager = dbManager
 	webSrv.JadibotMgr = jadibotSessionManager
+	webSrv.Activity = botClient.Activity
 	webSrv.GetSelfMode = botClient.GetSelfMode
 	webSrv.GetPrefixes = botClient.GetPrefixes
 

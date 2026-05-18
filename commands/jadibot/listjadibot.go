@@ -138,3 +138,10 @@ func formatUptime(hours, minutes, seconds int) string {
 	}
 	return fmt.Sprintf("%02d:%02d", minutes, seconds)
 }
+
+func formatBoolean(b bool) string {
+	if b {
+		return "Ya"
+	}
+	return "Tidak"
+}

@@ -51,12 +51,16 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(jadibot.StopJadibotMetadata, jadibot.StopJadibotHandler)
 	registry.Register(jadibot.PauseJadibotMetadata, jadibot.PauseJadibotHandler)
 	registry.Register(jadibot.ResumeJadibotMetadata, jadibot.ResumeJadibotHandler)
-	registry.Register(jadibot.RemoveJadibotMetadata, jadibot.RemoveJadibotHandler)
-	registry.Register(owner.DeleteJadibotMetadata, owner.DeleteJadibotHandler)
+	registry.Register(jadibot.DeleteJadibotMetadata, jadibot.DeleteJadibotHandler)
+	registry.Register(owner.RemoveJadibotMetadata, owner.RemoveJadibotHandler)
 
 	registry.Register(download.PlayMetadata, download.PlayHandler)
 
 	registry.Register(download.SpotifyMetadata, download.SpotifyHandler)
+
+	registry.Register(download.SoundCloudMetadata, download.SoundCloudHandler)
+
+	registry.Register(download.SnackVideoMetadata, download.SnackVideoHandler)
 
 	registry.Register(download.InstagramMetadata, download.InstagramHandler)
 	registry.Register(download.GitHubMetadata, download.GitHubHandler)
@@ -69,4 +73,6 @@ func registerCommands(registry *lib.CommandRegistry) {
 	registry.Register(maker.BratMetadata, maker.BratHandler)
 
 	registry.Register(maker.StickerMetadata, maker.StickerHandler)
+
+	registry.Register(maker.Gif2StickerMetadata, maker.Gif2StickerHandler)
 }

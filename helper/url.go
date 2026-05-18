@@ -19,6 +19,10 @@ var (
 
 	spotifyRe = regexp.MustCompile(`(?i)^https?://(?:open\.|www\.)?spotify\.com/(?:intl-[a-z]+/)?(?:track|album|playlist|artist|episode|show)/[A-Za-z0-9]+`)
 
+	soundcloudRe = regexp.MustCompile(`(?i)^https?://(?:www\.|m\.|on\.)?soundcloud\.com/[A-Za-z0-9_-]+/[A-Za-z0-9_-]+`)
+
+	snackvideoRe = regexp.MustCompile(`(?i)^https?://(?:www\.|m\.|s\.)?snackvideo\.com/`)
+
 	urlSchemeRe = regexp.MustCompile(`(?i)^https?://`)
 
 	anyURLRe = regexp.MustCompile(`(?i)https?://[^\s<>"'\x60]+`)
@@ -76,6 +80,14 @@ func IsYouTubeURL(input string) bool {
 
 func IsSpotifyURL(input string) bool {
 	return spotifyRe.MatchString(strings.TrimSpace(input))
+}
+
+func IsSoundCloudURL(input string) bool {
+	return soundcloudRe.MatchString(strings.TrimSpace(input))
+}
+
+func IsSnackVideoURL(input string) bool {
+	return snackvideoRe.MatchString(strings.TrimSpace(input))
 }
 
 func LooksLikeURL(input string) bool {

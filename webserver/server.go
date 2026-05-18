@@ -21,12 +21,13 @@ import (
 var webFS embed.FS
 
 type Server struct {
-	Addr       string
-	Registry   *lib.CommandRegistry
-	Client     *gowa.Client
-	DBManager  *helper.DatabaseManager
-	JadibotMgr *helper.JadibotSessionManager
-	StartedAt  time.Time
+	Addr        string
+	Registry    *lib.CommandRegistry
+	Client      *gowa.Client
+	DBManager   *helper.DatabaseManager
+	JadibotMgr  *helper.JadibotSessionManager
+	Activity    *helper.ActivityLog
+	StartedAt   time.Time
 	GetSelfMode func() bool
 	GetPrefixes func() []string
 
@@ -48,6 +49,7 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("/api/bot", s.handleBot)
 	mux.HandleFunc("/api/commands", s.handleCommands)
 	mux.HandleFunc("/api/jadibots", s.handleJadibots)
+	mux.HandleFunc("/api/activity", s.handleActivity)
 	mux.HandleFunc("/api/stream", s.handleStream)
 
 	webFiles, err := fs.Sub(webFS, "web")
@@ -230,42 +232,82 @@ type jadibotDTO struct {
 }
 
 func (s *Server) buildJadibots() map[string]interface{} {
+	empty := map[string]interface{}{
+		"total":   0,
+		"running": 0,
+		"active":  0,
+		"paused":  0,
+		"stopped": 0,
+		"items":   []interface{}{},
+	}
 	if s.DBManager == nil {
-		return map[string]interface{}{"total": 0, "items": []interface{}{}}
+		return empty
 	}
 
-	bots, err := s.DBManager.GetActiveJadibot()
+	bots, err := s.DBManager.GetAllJadibot()
 	if err != nil {
-		return map[string]interface{}{
-			"total": 0,
-			"items": []interface{}{},
-			"error": err.Error(),
-		}
+		out := empty
+		out["error"] = err.Error()
+		return out
 	}
 
 	items := make([]jadibotDTO, 0, len(bots))
+	var active, paused, stopped, running int
 	for _, b := range bots {
-		running := false
+		isRunning := false
 		if s.JadibotMgr != nil {
-			running = s.JadibotMgr.IsRunning(b.ID)
+			isRunning = s.JadibotMgr.IsRunning(b.ID)
+		}
+		switch b.Status {
+		case "active":
+			active++
+		case "paused":
+			paused++
+		case "stopped":
+			stopped++
+		}
+		if isRunning {
+			running++
 		}
 		items = append(items, jadibotDTO{
 			ID:          b.ID,
 			OwnerJID:    b.OwnerJID,
 			PhoneNumber: b.PhoneNumber,
 			Status:      b.Status,
-			Running:     running,
+			Running:     isRunning,
 		})
 	}
 
+	return map[string]interface{}{
+		"total":   len(items),
+		"running": running,
+		"active":  active,
+		"paused":  paused,
+		"stopped": stopped,
+		"items":   items,
+	}
+}
+
+func (s *Server) handleJadibots(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, s.buildJadibots())
+}
+
+func (s *Server) buildActivity() map[string]interface{} {
+	if s.Activity == nil {
+		return map[string]interface{}{"total": 0, "items": []interface{}{}}
+	}
+	items := s.Activity.Recent(20)
+	if items == nil {
+		items = []helper.ActivityEntry{}
+	}
 	return map[string]interface{}{
 		"total": len(items),
 		"items": items,
 	}
 }
 
-func (s *Server) handleJadibots(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, s.buildJadibots())
+func (s *Server) handleActivity(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, s.buildActivity())
 }
 
 func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
@@ -299,6 +341,7 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 		"bot":      s.buildBot(),
 		"jadibots": s.buildJadibots(),
 		"commands": s.buildCommands(),
+		"activity": s.buildActivity(),
 	}) {
 		return
 	}
@@ -320,6 +363,7 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 				"memory":   s.buildMemory(),
 				"bot":      s.buildBot(),
 				"jadibots": s.buildJadibots(),
+				"activity": s.buildActivity(),
 			}) {
 				return
 			}

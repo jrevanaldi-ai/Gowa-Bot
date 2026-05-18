@@ -61,6 +61,23 @@ Sebelum memulai, pastikan Anda telah menginstal:
 
 ## 🚀 Instalasi
 
+### 🪄 Quick install (otomatis)
+
+Setelah clone repo, jalankan installer interaktif — bakal cek/install Go, git, ffmpeg; prompt isi `.env`; build binary; dan opsional setup systemd service.
+
+```bash
+git clone https://github.com/jrevanaldi-ai/gowa-bot.git
+cd gowa-bot
+./install.sh
+```
+
+Flag berguna:
+- `./install.sh --help` — lihat semua opsi
+- `./install.sh --yes` — auto-confirm prompt (pakai default)
+- `./install.sh --skip-service --skip-go` — skip step tertentu
+
+Atau ikuti langkah manual di bawah ini.
+
 ### 1. Clone Repository
 
 ```bash
@@ -198,6 +215,8 @@ Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`).
 | `.instagram` | - | Download Instagram post/reel | `.instagram <url>` |
 | `.tiktok` | - | Download video TikTok | `.tiktok <url>` |
 | `.github` | - | Info / download repo GitHub | `.github user/repo` |
+| `.snackvideo` | `.snack`, `.sv`, `.snackdl` | Download video dari SnackVideo (API siputzx) | `.snack https://s.snackvideo.com/p/xxx` |
+| `.soundcloud` | `.sc`, `.scdl` | Download audio dari SoundCloud (API siputzx) | `.sc https://soundcloud.com/user/track` |
 
 ### 🎨 Maker
 
@@ -205,8 +224,9 @@ Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`).
 |---------|-------|-----------|--------|
 | `.brat` | - | Buat sticker brat dari teks (PNG → WebP 512×512) | `.brat halo dunia` |
 | `.sticker` | `.s`, `.stiker` | Convert gambar jadi sticker (caption / reply) | kirim gambar dengan caption `.s` atau reply gambar dengan `.s` |
+| `.gif2sticker` | `.gif2s`, `.gif2stiker`, `.videosticker`, `.vsticker` | Convert GIF/video pendek jadi sticker animasi (max 6 detik, 512×512, loop) | kirim/reply GIF/video dengan `.gif2s` |
 
-> 💡 Butuh image converter terpasang (`magick` / `convert` / `ffmpeg`). Helper di `helper/sticker.go` otomatis pilih yang tersedia — shared antara `.brat` dan `.s`.
+> 💡 Butuh image converter terpasang (`magick` / `convert` / `ffmpeg`). Helper di `helper/sticker.go` otomatis pilih yang tersedia — shared antara `.brat` dan `.s`. `.gif2sticker` wajib `ffmpeg` (dengan `libwebp`).
 
 ### 🔍 Search
 
@@ -229,6 +249,7 @@ Bot menggunakan **prefix** `.` untuk command (bisa diganti dengan `.setprefix`).
 | `.unbangroup` | - | Unban group | `.unbangroup` |
 | `.banuser` | - | Ban user | `.banuser @user` |
 | `.unbanuser` | - | Unban user | `.unbanuser @user` |
+| `.removejadibot` | `.removejb`, `.hapusjadibot`, `.hapusjb` | Owner paksa hapus jadibot user manapun (permanen) | `.removejadibot <id>` |
 
 > 💡 Owner dapat memanggil command tanpa prefix `.` (kecuali pesan `IsFromMe` — anti-loop). Prefix `$` di-reserve khusus untuk `exec` dan tidak bisa diganti via `.setprefix`.
 
@@ -243,12 +264,9 @@ Memungkinkan user lain pairing nomor mereka sebagai sub-bot di bawah Gowa-Bot ut
 | `.stopjadibot` | - | Hentikan jadibot | `.stopjadibot <id>` |
 | `.pausejadibot` | - | Pause jadibot (bisa di-resume) | `.pausejadibot <id>` |
 | `.resumejadibot` | - | Resume jadibot yang di-pause | `.resumejadibot <id>` |
-| `.deletejadibot` | `.deljb`, `.deletejb`, `.delsession` | **User biasa** hapus jadibot **milik sendiri** (verifikasi via `OwnerJID.User`) | `.deletejadibot` (auto kalau hanya 1) atau `.deletejadibot <id>` |
-| `.removejadibot` | - | **Owner bot induk** hapus jadibot siapapun (permanen) | `.removejadibot <id>` |
+| `.deletejadibot` | `.deljb`, `.deletejb`, `.delsession` | **User biasa** hapus jadibot **milik sendiri** (verifikasi via `OwnerJID.User`) — package `jadibot/` | `.deletejadibot` (auto kalau hanya 1) atau `.deletejadibot <id>` |
 
-> 💡 Beda `.deletejadibot` vs `.removejadibot`:
-> - `.deletejadibot` → tag `owner` di registry, tapi `OwnerOnly: false`. Verifikasi ownership di handler. Cocok untuk **user kreator** hapus session-nya sendiri.
-> - `.removejadibot` → `OwnerOnly: true`. Hanya owner bot induk, bisa hapus jadibot user manapun (paksa hapus).
+> 💡 `.deletejadibot` self-service (tag `jadibot`, `OwnerOnly: false`) vs `.removejadibot` owner-only (tag `owner`, `OwnerOnly: true`, lihat section Owner).
 
 ### 🐞 Debug
 
@@ -314,13 +332,15 @@ DEBUG:
 DOWNLOAD:
 - github
 - instagram
+- snackvideo (snack)
+- soundcloud (sc)
 - tiktok
 
 JADIBOT:
+- deletejadibot (deljadibot)
 - jadibot
 - listjadibot
 - pausejadibot
-- removejadibot
 - resumejadibot
 - stopjadibot
 
@@ -332,17 +352,18 @@ MAIN:
 
 MAKER:
 - brat
+- gif2sticker (gif2s)
 - sticker (s)
 
 OWNER:
 - bangroup
 - banuser
-- deletejadibot (deljadibot)
 - eval (ev)
 - exec
 - infoserver
 - join (joingrup)
 - react
+- removejadibot (removejb)
 - setmode
 - setprefix
 - unbangroup
@@ -536,6 +557,7 @@ gowa-bot/
 ├── 📄 registryCmd.go       # registerCommands() — daftarkan command di sini
 ├── 📦 go.mod               # Dependensi Go (replace gowa → ./gowa-lib)
 ├── 🔧 .env.example         # Template konfigurasi
+├── 🛠 install.sh            # Installer interaktif (deps + .env + build + systemd)
 ├── 📖 README.md            # Dokumentasi (file ini)
 ├── 📖 CLAUDE.md            # Guide untuk Claude Code
 │
@@ -545,10 +567,10 @@ gowa-bot/
 ├── 📂 commands/
 │   ├── 📂 general/           # menu, help, getpp, donasi, lune (AI)
 │   ├── 📂 utility/           # ping
-│   ├── 📂 owner/             # exec, eval, setmode, setprefix, ban, deletejadibot (self-service)
-│   ├── 📂 jadibot/           # multi-bot management (jadibot, list/stop/pause/resume/remove)
+│   ├── 📂 owner/             # exec, eval, setmode, setprefix, ban, removejadibot (owner-only force-delete)
+│   ├── 📂 jadibot/           # multi-bot management: jadibot, list/stop/pause/resume + deletejadibot (self-service)
 │   ├── 📂 download/          # play, spotify (tag=play), instagram, tiktok, github, ttsearch
-│   ├── 📂 maker/             # brat (text→sticker), sticker (image→sticker)
+│   ├── 📂 maker/             # brat (text→sticker), sticker (image→sticker), gif2sticker (video/GIF→animated sticker)
 │   └── 📂 debug/             # checkephemeral
 │
 ├── 📂 helper/
