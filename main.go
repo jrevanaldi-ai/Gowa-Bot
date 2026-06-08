@@ -12,9 +12,9 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/store/sqlstore"
-	waLog "github.com/jrevanaldi-ai/gowa/util/log"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store/sqlstore"
+	waLog "go.mau.fi/whatsmeow/util/log"
 
 	"github.com/jrevanaldi-ai/gowa-bot/client"
 	general "github.com/jrevanaldi-ai/gowa-bot/commands/general"
@@ -77,7 +77,7 @@ func main() {
 
 	gowaLog := &formatLogger{logger: logger}
 
-	clientFactory := func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface {
+	clientFactory := func(registry *lib.CommandRegistry, owners []string, gowaClient *whatsmeow.Client) lib.BotClientInterface {
 		botClient := client.NewBotClient(registry, &client.BotConfig{
 			Owners:      []string{},
 			Prefixes:    []string{"."},
@@ -183,7 +183,7 @@ func getOwnerNumbers() []string {
 	return result
 }
 
-func connectWhatsApp(ctx context.Context, logger *helper.Logger, botClient *client.BotClient) *gowa.Client {
+func connectWhatsApp(ctx context.Context, logger *helper.Logger, botClient *client.BotClient) *whatsmeow.Client {
 
 	gowaLog := &formatLogger{logger: logger}
 
@@ -203,7 +203,7 @@ func connectWhatsApp(ctx context.Context, logger *helper.Logger, botClient *clie
 		device = container.NewDevice()
 	}
 
-	cli := gowa.NewClient(device, gowaLog)
+	cli := whatsmeow.NewClient(device, gowaLog)
 
 	cli.AddEventHandler(botClient.EventHandler)
 
@@ -224,15 +224,10 @@ func connectWhatsApp(ctx context.Context, logger *helper.Logger, botClient *clie
 
 	time.Sleep(1 * time.Second)
 
-	var code string
 	if *pairCode != "" {
-
-		code, err = cli.PairPhone(ctx, *phone, true, gowa.PairClientChrome, "Chrome (Linux)", *pairCode)
-	} else {
-
-		code, err = cli.PairPhone(ctx, *phone, true, gowa.PairClientChrome, "Chrome (Linux)")
+		logger.Warning("Custom pair code (-pair) not supported by upstream whatsmeow, ignoring.")
 	}
-
+	code, err := cli.PairPhone(ctx, *phone, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
 	if err != nil {
 		logger.Error("Failed to pair: %v", err)
 		return nil

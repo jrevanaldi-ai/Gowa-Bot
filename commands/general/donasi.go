@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/google/uuid"
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -212,7 +212,7 @@ func DonasiHandler(ctx *lib.CommandContext) error {
 	logger.Info("QR image downloaded successfully (%d bytes)", len(qrImageData))
 
 
-	uploadResp, err := ctx.Client.Upload(context.Background(), qrImageData, gowa.MediaImage)
+	uploadResp, err := ctx.Client.Upload(context.Background(), qrImageData, whatsmeow.MediaImage)
 	if err != nil {
 		logger.Error("Failed to upload QR image: %v", err)
 		errorMsg := fmt.Sprintf("Gagal upload QR Image.\n\nError: %s", err.Error())

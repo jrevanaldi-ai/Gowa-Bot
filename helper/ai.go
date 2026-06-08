@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jrevanaldi-ai/gowa"
+	"go.mau.fi/whatsmeow"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
@@ -25,7 +25,7 @@ type AIService struct {
 
 	registry   *lib.CommandRegistry
 	dispatcher *lib.Dispatcher
-	client     *gowa.Client
+	client     *whatsmeow.Client
 	jadibotMgr lib.JadibotSessionManagerInterface
 	dbManager  interface{}
 }
@@ -71,7 +71,7 @@ type AIErrorResponse struct {
 	} `json:"error"`
 }
 
-func NewAIService(apiKey, baseURL, model, systemPrompt string, registry *lib.CommandRegistry, dispatcher *lib.Dispatcher, client *gowa.Client, jadibotMgr lib.JadibotSessionManagerInterface, dbManager interface{}) *AIService {
+func NewAIService(apiKey, baseURL, model, systemPrompt string, registry *lib.CommandRegistry, dispatcher *lib.Dispatcher, client *whatsmeow.Client, jadibotMgr lib.JadibotSessionManagerInterface, dbManager interface{}) *AIService {
 	if baseURL == "" {
 		baseURL = "https://api.yardansh.com/api/anthropic/v1/messages"
 	}

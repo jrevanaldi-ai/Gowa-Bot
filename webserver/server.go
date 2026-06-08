@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jrevanaldi-ai/gowa"
+	"go.mau.fi/whatsmeow"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -23,7 +23,7 @@ var webFS embed.FS
 type Server struct {
 	Addr        string
 	Registry    *lib.CommandRegistry
-	Client      *gowa.Client
+	Client      *whatsmeow.Client
 	DBManager   *helper.DatabaseManager
 	JadibotMgr  *helper.JadibotSessionManager
 	Activity    *helper.ActivityLog

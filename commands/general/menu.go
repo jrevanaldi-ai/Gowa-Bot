@@ -9,8 +9,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -18,7 +18,7 @@ import (
 const (
 	menuTitle        = "GOWA-BOT"
 	menuDescription  = "WhatsApp Bot with Gowa Library"
-	menuLibraryURL   = "https://github.com/jrevanaldi-ai/gowa"
+	menuLibraryURL   = "https://github.com/tulir/whatsmeow"
 	menuSourceURL    = "https://github.com/jrevanaldi-ai/Gowa-Bot"
 	menuDashboardURL = "dash.astralune.cv"
 	menuThumbnailURL = "https://camo.githubusercontent.com/bf1451d500e2f05c58357170a54a224f8c0531e5af665e89df7df1fcbbc35ebd/68747470733a2f2f66696c65732e636174626f782e6d6f652f31786e7a33382e6a7067"
@@ -103,7 +103,7 @@ func MenuHandler(ctx *lib.CommandContext) error {
 		return nil
 	}
 
-	upload, err := ctx.Client.Upload(context.Background(), imgBytes, gowa.MediaImage)
+	upload, err := ctx.Client.Upload(context.Background(), imgBytes, whatsmeow.MediaImage)
 	if err != nil {
 		return fmt.Errorf("failed to upload menu image: %w", err)
 	}

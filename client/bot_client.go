@@ -9,17 +9,17 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa"
+	"go.mau.fi/whatsmeow"
 	"github.com/jrevanaldi-ai/gowa-bot/commands/owner"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
-	"github.com/jrevanaldi-ai/gowa/types"
-	"github.com/jrevanaldi-ai/gowa/types/events"
+	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
 )
 
 type BotClient struct {
-	Client                *gowa.Client
+	Client                *whatsmeow.Client
 	Registry              *lib.CommandRegistry
 	Logger                *helper.Logger
 	Cache                 *helper.Cache
@@ -122,7 +122,7 @@ func NewBotClient(registry *lib.CommandRegistry, config *BotConfig) *BotClient {
 	return botClient
 }
 
-func (b *BotClient) SetClient(client *gowa.Client) {
+func (b *BotClient) SetClient(client *whatsmeow.Client) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.Client = client
@@ -196,10 +196,6 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		msg = *evt.Message.LocationMessage.Comment
 	case evt.Message.LiveLocationMessage != nil && evt.Message.LiveLocationMessage.Caption != nil:
 		msg = *evt.Message.LiveLocationMessage.Caption
-	case evt.Message.StickerMessage != nil:
-		msg = "Sticker"
-	case evt.Message.ContactMessage != nil && evt.Message.ContactMessage.DisplayName != nil:
-		msg = *evt.Message.ContactMessage.DisplayName
 	case evt.Message.ButtonsResponseMessage != nil && evt.Message.ButtonsResponseMessage.SelectedButtonID != nil:
 		msg = *evt.Message.ButtonsResponseMessage.SelectedButtonID
 	case evt.Message.ListResponseMessage != nil && evt.Message.ListResponseMessage.SingleSelectReply != nil:
@@ -210,30 +206,8 @@ func (b *BotClient) processMessage(ctx context.Context, evt *events.Message) {
 		if evt.Message.InteractiveResponseMessage.Body.Text != nil {
 			msg = *evt.Message.InteractiveResponseMessage.Body.Text
 		}
-	case evt.Message.ReactionMessage != nil && evt.Message.ReactionMessage.Text != nil:
-		msg = *evt.Message.ReactionMessage.Text
-	case evt.Message.PollCreationMessage != nil && evt.Message.PollCreationMessage.Name != nil:
-		msg = *evt.Message.PollCreationMessage.Name
-	case evt.Message.PollUpdateMessage != nil:
-		msg = "Poll Vote"
-	case evt.Message.OrderMessage != nil && evt.Message.OrderMessage.OrderTitle != nil:
-		msg = *evt.Message.OrderMessage.OrderTitle
-	case evt.Message.RequestPhoneNumberMessage != nil:
-		msg = "Request Phone Number"
-	case evt.Message.CallLogMesssage != nil:
-		msg = "Call Log"
-	case evt.Message.ScheduledCallCreationMessage != nil:
-		msg = "Scheduled Call"
-	case evt.Message.GroupInviteMessage != nil:
-		msg = "Group Invite"
 	case evt.Message.TemplateButtonReplyMessage != nil && evt.Message.TemplateButtonReplyMessage.SelectedID != nil:
 		msg = *evt.Message.TemplateButtonReplyMessage.SelectedID
-	case evt.Message.ProductMessage != nil && evt.Message.ProductMessage.Product != nil:
-		if evt.Message.ProductMessage.Product.Title != nil {
-			msg = *evt.Message.ProductMessage.Product.Title
-		}
-	case evt.Message.ListMessage != nil && evt.Message.ListMessage.Title != nil:
-		msg = *evt.Message.ListMessage.Title
 	case evt.Message.EditedMessage != nil:
 
 		if evt.Message.EditedMessage.Message != nil {
@@ -690,5 +664,243 @@ func (b *BotClient) EventHandler(evt any) {
 
 	case *events.PairError:
 		b.Logger.Error("Pairing failed: %v", v.Error)
+
+	case *events.GroupInfo:
+		go b.handleGroupInfo(v)
 	}
+}
+
+func (b *BotClient) handleGroupInfo(evt *events.GroupInfo) {
+	if b.DBManager == nil || evt == nil {
+		return
+	}
+	if len(evt.Join) == 0 && len(evt.Leave) == 0 {
+		return
+	}
+
+	groupJID := evt.JID.String()
+	cfg, err := b.DBManager.GetWelcomeConfig(groupJID)
+	if err != nil {
+		b.Logger.Warning("Failed to get welcome config: %v", err)
+		return
+	}
+
+	b.mu.RLock()
+	client := b.Client
+	b.mu.RUnlock()
+	if client == nil {
+		return
+	}
+
+	var groupName, groupDesc string
+	var memberCount int
+	var addrMode types.AddressingMode
+	if info, err := client.GetGroupInfo(context.Background(), evt.JID); err == nil && info != nil {
+		groupName = info.Name
+		groupDesc = info.Topic
+		memberCount = len(info.Participants)
+		addrMode = info.AddressingMode
+	}
+
+	if len(evt.Join) > 0 && cfg.WelcomeEnabled && cfg.WelcomeText != "" {
+		b.sendWelcomeMessage(evt.JID, evt.Join, cfg.WelcomeText, groupName, groupDesc, memberCount, addrMode, true)
+	}
+	if len(evt.Leave) > 0 && cfg.GoodbyeEnabled && cfg.GoodbyeText != "" {
+		b.sendWelcomeMessage(evt.JID, evt.Leave, cfg.GoodbyeText, groupName, groupDesc, memberCount, addrMode, false)
+	}
+}
+
+func (b *BotClient) sendWelcomeMessage(groupJID types.JID, users []types.JID, template, groupName, groupDesc string, memberCount int, addrMode types.AddressingMode, isWelcome bool) {
+	b.mu.RLock()
+	client := b.Client
+	b.mu.RUnlock()
+
+	for _, user := range users {
+		phoneJID, lidJID := b.resolveUserJIDs(client, user)
+
+		var mentionNumber string
+		var primaryJID types.JID
+		if addrMode == types.AddressingModeLID && !lidJID.IsEmpty() {
+			mentionNumber = lidJID.User
+			primaryJID = lidJID
+		} else if !phoneJID.IsEmpty() {
+			mentionNumber = phoneJID.User
+			primaryJID = phoneJID
+		} else if !lidJID.IsEmpty() {
+			mentionNumber = lidJID.User
+			primaryJID = lidJID
+		} else {
+			mentionNumber = user.User
+			primaryJID = user
+		}
+		mentionTag := "@" + mentionNumber
+
+		// Try to resolve a display name from contact store. If found, prefix
+		// the mention with the name so receivers see "Name (@123)" instead of
+		// a bare number when their local pushname cache is empty (typical for
+		// brand-new joiners).
+		displayName := b.lookupDisplayName(client, phoneJID, lidJID, user)
+		if displayName != "" {
+			mentionTag = displayName + " " + mentionTag
+		}
+
+		mentioned := []string{primaryJID.String()}
+
+		text := template
+		text = strings.ReplaceAll(text, "@user", mentionTag)
+		text = strings.ReplaceAll(text, "@group", groupName)
+		text = strings.ReplaceAll(text, "@count", fmt.Sprintf("%d", memberCount))
+		text = strings.ReplaceAll(text, "@desc", groupDesc)
+
+		b.Logger.Info("Send welcome/goodbye: group=%s user=%s lid=%s phone=%s mode=%s tag=%s",
+			groupJID.String(), user.String(), lidJID.String(), phoneJID.String(), addrMode, mentionTag)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		msg := b.buildWelcomeCanvasMessage(ctx, client, groupJID, primaryJID, phoneJID, lidJID, user, displayName, groupName, memberCount, text, mentioned, isWelcome)
+		_, err := b.SendMessage(ctx, groupJID, msg)
+		cancel()
+		if err != nil {
+			b.Logger.Warning("Failed to send welcome/goodbye to %s: %v", groupJID.String(), err)
+		}
+	}
+}
+
+func (b *BotClient) buildWelcomeCanvasMessage(
+	ctx context.Context,
+	client *whatsmeow.Client,
+	groupJID, primaryJID, phoneJID, lidJID, originalJID types.JID,
+	displayName, groupName string,
+	memberCount int,
+	caption string,
+	mentioned []string,
+	isWelcome bool,
+) *waE2E.Message {
+	textOnly := func() *waE2E.Message {
+		return &waE2E.Message{
+			ExtendedTextMessage: &waE2E.ExtendedTextMessage{
+				Text: proto.String(caption),
+				ContextInfo: &waE2E.ContextInfo{
+					MentionedJID: mentioned,
+				},
+			},
+		}
+	}
+
+	if client == nil {
+		return textOnly()
+	}
+
+	pfpURL := ""
+	for _, jid := range []types.JID{primaryJID, phoneJID, lidJID, originalJID} {
+		if jid.IsEmpty() {
+			continue
+		}
+		info, err := client.GetProfilePictureInfo(ctx, jid, nil)
+		if err == nil && info != nil && info.URL != "" {
+			pfpURL = info.URL
+			break
+		}
+	}
+
+	groupIconURL := ""
+	if !groupJID.IsEmpty() {
+		if info, err := client.GetProfilePictureInfo(ctx, groupJID, nil); err == nil && info != nil {
+			groupIconURL = info.URL
+		}
+	}
+
+	userName := displayName
+	if userName == "" {
+		userName = "@" + primaryJID.User
+	}
+
+	imgBytes, err := helper.GenerateWelcomeCanvas(helper.CanvasParams{
+		IsWelcome:    isWelcome,
+		UserName:     userName,
+		GroupName:    groupName,
+		MemberCount:  memberCount,
+		PfpURL:       pfpURL,
+		GroupIconURL: groupIconURL,
+	})
+	if err != nil {
+		b.Logger.Warning("Failed to generate canvas: %v", err)
+		return textOnly()
+	}
+
+	uploadResp, err := client.Upload(ctx, imgBytes, whatsmeow.MediaImage)
+	if err != nil {
+		b.Logger.Warning("Failed to upload canvas: %v", err)
+		return textOnly()
+	}
+
+	return &waE2E.Message{
+		ImageMessage: &waE2E.ImageMessage{
+			Caption:       proto.String(caption),
+			Mimetype:      proto.String("image/jpeg"),
+			URL:           &uploadResp.URL,
+			DirectPath:    &uploadResp.DirectPath,
+			MediaKey:      uploadResp.MediaKey,
+			FileEncSHA256: uploadResp.FileEncSHA256,
+			FileSHA256:    uploadResp.FileSHA256,
+			FileLength:    &uploadResp.FileLength,
+			ContextInfo: &waE2E.ContextInfo{
+				MentionedJID: mentioned,
+			},
+		},
+	}
+}
+
+func (b *BotClient) lookupDisplayName(client *whatsmeow.Client, jids ...types.JID) string {
+	if client == nil || client.Store == nil || client.Store.Contacts == nil {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	for _, jid := range jids {
+		if jid.IsEmpty() {
+			continue
+		}
+		info, err := client.Store.Contacts.GetContact(ctx, jid)
+		if err != nil || !info.Found {
+			continue
+		}
+		if info.FullName != "" {
+			return info.FullName
+		}
+		if info.PushName != "" {
+			return info.PushName
+		}
+		if info.FirstName != "" {
+			return info.FirstName
+		}
+	}
+	return ""
+}
+
+func (b *BotClient) resolveUserJIDs(client *whatsmeow.Client, user types.JID) (phone, lid types.JID) {
+	if client == nil || client.Store == nil {
+		return user, types.JID{}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	switch user.Server {
+	case types.DefaultUserServer:
+		phone = user
+		if client.Store.LIDs != nil {
+			if resolved, err := client.Store.LIDs.GetLIDForPN(ctx, user); err == nil && !resolved.IsEmpty() {
+				lid = resolved
+			}
+		}
+	case types.HiddenUserServer, types.HostedLIDServer:
+		lid = user
+		if client.Store.LIDs != nil {
+			if resolved, err := client.Store.LIDs.GetPNForLID(ctx, user); err == nil && !resolved.IsEmpty() {
+				phone = resolved
+			}
+		}
+	default:
+		phone = user
+	}
+	return
 }

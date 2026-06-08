@@ -90,6 +90,15 @@ func (m *DatabaseManager) createTables() error {
 		banned_by TEXT NOT NULL
 	);
 
+	CREATE TABLE IF NOT EXISTS group_welcome (
+		group_jid TEXT PRIMARY KEY,
+		welcome_enabled INTEGER NOT NULL DEFAULT 0,
+		welcome_text TEXT NOT NULL DEFAULT '',
+		goodbye_enabled INTEGER NOT NULL DEFAULT 0,
+		goodbye_text TEXT NOT NULL DEFAULT '',
+		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
 	CREATE TABLE IF NOT EXISTS donations (
 		id TEXT PRIMARY KEY,
 		ref_no TEXT NOT NULL UNIQUE,
@@ -301,6 +310,83 @@ func (m *DatabaseManager) GetActiveJadibot() ([]JadibotInfo, error) {
 
 func (m *DatabaseManager) Close() error {
 	return m.DB.Close()
+}
+
+type WelcomeConfig struct {
+	GroupJID        string
+	WelcomeEnabled  bool
+	WelcomeText     string
+	GoodbyeEnabled  bool
+	GoodbyeText     string
+}
+
+func (m *DatabaseManager) GetWelcomeConfig(groupJID string) (*WelcomeConfig, error) {
+	query := `SELECT group_jid, welcome_enabled, welcome_text, goodbye_enabled, goodbye_text
+	          FROM group_welcome WHERE group_jid = ?`
+
+	var cfg WelcomeConfig
+	var wEnabled, gEnabled int
+	err := m.DB.QueryRow(query, groupJID).Scan(
+		&cfg.GroupJID, &wEnabled, &cfg.WelcomeText, &gEnabled, &cfg.GoodbyeText,
+	)
+	if err == sql.ErrNoRows {
+		return &WelcomeConfig{GroupJID: groupJID}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	cfg.WelcomeEnabled = wEnabled == 1
+	cfg.GoodbyeEnabled = gEnabled == 1
+	return &cfg, nil
+}
+
+func (m *DatabaseManager) upsertWelcome(groupJID string, fn func(*WelcomeConfig)) error {
+	cfg, err := m.GetWelcomeConfig(groupJID)
+	if err != nil {
+		return err
+	}
+	fn(cfg)
+	wEnabled, gEnabled := 0, 0
+	if cfg.WelcomeEnabled {
+		wEnabled = 1
+	}
+	if cfg.GoodbyeEnabled {
+		gEnabled = 1
+	}
+	query := `
+	INSERT INTO group_welcome (group_jid, welcome_enabled, welcome_text, goodbye_enabled, goodbye_text, updated_at)
+	VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+	ON CONFLICT(group_jid) DO UPDATE SET
+		welcome_enabled = excluded.welcome_enabled,
+		welcome_text = excluded.welcome_text,
+		goodbye_enabled = excluded.goodbye_enabled,
+		goodbye_text = excluded.goodbye_text,
+		updated_at = CURRENT_TIMESTAMP
+	`
+	_, err = m.DB.Exec(query, groupJID, wEnabled, cfg.WelcomeText, gEnabled, cfg.GoodbyeText)
+	return err
+}
+
+func (m *DatabaseManager) SetWelcomeEnabled(groupJID string, enabled bool) error {
+	return m.upsertWelcome(groupJID, func(c *WelcomeConfig) { c.WelcomeEnabled = enabled })
+}
+
+func (m *DatabaseManager) SetWelcomeText(groupJID, text string) error {
+	return m.upsertWelcome(groupJID, func(c *WelcomeConfig) {
+		c.WelcomeText = text
+		c.WelcomeEnabled = true
+	})
+}
+
+func (m *DatabaseManager) SetGoodbyeEnabled(groupJID string, enabled bool) error {
+	return m.upsertWelcome(groupJID, func(c *WelcomeConfig) { c.GoodbyeEnabled = enabled })
+}
+
+func (m *DatabaseManager) SetGoodbyeText(groupJID, text string) error {
+	return m.upsertWelcome(groupJID, func(c *WelcomeConfig) {
+		c.GoodbyeText = text
+		c.GoodbyeEnabled = true
+	})
 }
 
 func (m *DatabaseManager) BanJID(jid string, banType string, reason string, bannedBy string) error {

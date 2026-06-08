@@ -14,8 +14,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 )
 
 func ConvertImageToWebpSticker(input []byte) ([]byte, error) {
@@ -230,7 +230,7 @@ func ConvertVideoToAnimatedWebpSticker(input []byte) ([]byte, error) {
 	return out, nil
 }
 
-func BuildAnimatedStickerFromVideo(ctx context.Context, cli *gowa.Client, videoData []byte, packName, packPublisher, replyToMsgID, senderJID, chatJID string) (*waE2E.Message, error) {
+func BuildAnimatedStickerFromVideo(ctx context.Context, cli *whatsmeow.Client, videoData []byte, packName, packPublisher, replyToMsgID, senderJID, chatJID string) (*waE2E.Message, error) {
 	webpData, err := ConvertVideoToAnimatedWebpSticker(videoData)
 	if err != nil {
 		return nil, fmt.Errorf("convert animated sticker: %w", err)
@@ -240,7 +240,7 @@ func BuildAnimatedStickerFromVideo(ctx context.Context, cli *gowa.Client, videoD
 		webpData = stamped
 	}
 
-	uploadResp, err := cli.Upload(ctx, webpData, gowa.MediaImage)
+	uploadResp, err := cli.Upload(ctx, webpData, whatsmeow.MediaImage)
 	if err != nil {
 		return nil, fmt.Errorf("upload sticker: %w", err)
 	}
@@ -272,7 +272,7 @@ func BuildAnimatedStickerFromVideo(ctx context.Context, cli *gowa.Client, videoD
 	}, nil
 }
 
-func BuildStickerFromImage(ctx context.Context, cli *gowa.Client, imgData []byte, packName, packPublisher, replyToMsgID, senderJID, chatJID string) (*waE2E.Message, error) {
+func BuildStickerFromImage(ctx context.Context, cli *whatsmeow.Client, imgData []byte, packName, packPublisher, replyToMsgID, senderJID, chatJID string) (*waE2E.Message, error) {
 	webpData, err := ConvertImageToWebpSticker(imgData)
 	if err != nil {
 		return nil, fmt.Errorf("convert sticker: %w", err)
@@ -282,7 +282,7 @@ func BuildStickerFromImage(ctx context.Context, cli *gowa.Client, imgData []byte
 		webpData = stamped
 	}
 
-	uploadResp, err := cli.Upload(ctx, webpData, gowa.MediaImage)
+	uploadResp, err := cli.Upload(ctx, webpData, whatsmeow.MediaImage)
 	if err != nil {
 		return nil, fmt.Errorf("upload sticker: %w", err)
 	}

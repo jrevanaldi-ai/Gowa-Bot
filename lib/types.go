@@ -3,17 +3,17 @@ package lib
 import (
 	"context"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
-	"github.com/jrevanaldi-ai/gowa/types"
-	"github.com/jrevanaldi-ai/gowa/types/events"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
 )
 
 type BotClientInterface interface {
 	SetSelfMode(mode bool)
 	GetSelfMode() bool
 	EventHandler(evt any)
-	SetClient(client *gowa.Client)
+	SetClient(client *whatsmeow.Client)
 	GetDBManager() interface{}
 	GetCache() interface{}
 	SetPrefixes(prefixes []string)
@@ -62,7 +62,7 @@ type ReplyMessageInfo struct {
 
 type CommandContext struct {
 	Ctx                   context.Context
-	Client                *gowa.Client
+	Client                *whatsmeow.Client
 	BotClient             BotClientInterface
 	JadibotSessionManager JadibotSessionManagerInterface
 	Sender                types.JID

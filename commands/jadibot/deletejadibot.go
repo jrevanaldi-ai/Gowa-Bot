@@ -7,8 +7,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
-	"github.com/jrevanaldi-ai/gowa/types"
+	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
 
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"

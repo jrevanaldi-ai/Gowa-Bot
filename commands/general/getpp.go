@@ -10,8 +10,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -76,14 +76,14 @@ func GetppHandler(ctx *lib.CommandContext) error {
 	defer cancel()
 
 
-	profilePicInfo, err := ctx.Client.GetProfilePictureInfo(ctxTimeout, lib.StringToJID(targetJID), &gowa.GetProfilePictureParams{
+	profilePicInfo, err := ctx.Client.GetProfilePictureInfo(ctxTimeout, lib.StringToJID(targetJID), &whatsmeow.GetProfilePictureParams{
 		Preview: false,
 	})
 	if err != nil {
 		var errorMsg string
-		if err == gowa.ErrProfilePictureUnauthorized {
+		if err == whatsmeow.ErrProfilePictureUnauthorized {
 			errorMsg = "User ini menyembunyikan foto profilnya dari Anda."
-		} else if err == gowa.ErrProfilePictureNotSet {
+		} else if err == whatsmeow.ErrProfilePictureNotSet {
 			errorMsg = "User ini tidak memiliki foto profil."
 		} else {
 			errorMsg = fmt.Sprintf("Gagal mengambil foto profil:\n%v", err)
@@ -128,7 +128,7 @@ func GetppHandler(ctx *lib.CommandContext) error {
 	}
 
 
-	uploadResp, err := ctx.Client.Upload(context.Background(), imageData, gowa.MediaImage)
+	uploadResp, err := ctx.Client.Upload(context.Background(), imageData, whatsmeow.MediaImage)
 	if err != nil {
 		errorMsg := fmt.Sprintf("Gagal mengupload foto:\n%v", err)
 		_, _ = ctx.SendMessage(helper.CreateSimpleReply(errorMsg, loadingMsgID, ctx.Sender.String(), ctx.Chat.String()))

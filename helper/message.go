@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"google.golang.org/protobuf/proto"
 )
 

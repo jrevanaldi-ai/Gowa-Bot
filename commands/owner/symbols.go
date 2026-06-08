@@ -3,12 +3,12 @@ package owner
 import (
 	"reflect"
 
-	"github.com/jrevanaldi-ai/gowa"
+	"go.mau.fi/whatsmeow"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
-	"github.com/jrevanaldi-ai/gowa/types"
-	"github.com/jrevanaldi-ai/gowa/types/events"
+	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -26,11 +26,11 @@ func init() {
 		"Float64": reflect.ValueOf(proto.Float64),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa/gowa"] = map[string]reflect.Value{
-		"Client": reflect.ValueOf((*gowa.Client)(nil)),
+	Symbols["go.mau.fi/whatsmeow/whatsmeow"] = map[string]reflect.Value{
+		"Client": reflect.ValueOf((*whatsmeow.Client)(nil)),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa/types/types"] = map[string]reflect.Value{
+	Symbols["go.mau.fi/whatsmeow/types/types"] = map[string]reflect.Value{
 		"JID":               reflect.ValueOf((*types.JID)(nil)),
 		"ParseJID":          reflect.ValueOf(types.ParseJID),
 		"NewJID":            reflect.ValueOf(types.NewJID),
@@ -41,7 +41,7 @@ func init() {
 		"BroadcastServer":   reflect.ValueOf(types.BroadcastServer),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa/proto/waE2E/waE2E"] = map[string]reflect.Value{
+	Symbols["go.mau.fi/whatsmeow/proto/waE2E/waE2E"] = map[string]reflect.Value{
 		"Message":             reflect.ValueOf((*waE2E.Message)(nil)),
 		"ExtendedTextMessage": reflect.ValueOf((*waE2E.ExtendedTextMessage)(nil)),
 		"ContextInfo":         reflect.ValueOf((*waE2E.ContextInfo)(nil)),
@@ -51,7 +51,7 @@ func init() {
 		"ReactionMessage":     reflect.ValueOf((*waE2E.ReactionMessage)(nil)),
 	}
 
-	Symbols["github.com/jrevanaldi-ai/gowa/types/events/events"] = map[string]reflect.Value{
+	Symbols["go.mau.fi/whatsmeow/types/events/events"] = map[string]reflect.Value{
 		"Message":      reflect.ValueOf((*events.Message)(nil)),
 		"Connected":    reflect.ValueOf((*events.Connected)(nil)),
 		"Disconnected": reflect.ValueOf((*events.Disconnected)(nil)),

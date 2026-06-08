@@ -138,9 +138,9 @@ import (
 	"sort"
 
 	"google.golang.org/protobuf/proto"
-	"github.com/jrevanaldi-ai/gowa/types"
-	"github.com/jrevanaldi-ai/gowa/types/events"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 )
 
@@ -228,7 +228,7 @@ func sendEvalUsage(ctx *lib.CommandContext) error {
 		"- Statement  : pakai `return X` di akhir blok\n\n" +
 		"*Variabel*\n" +
 		"ctx : *lib.CommandContext\n" +
-		"c   : *gowa.Client\n" +
+		"c   : *whatsmeow.Client\n" +
 		"evt : *events.Message  (full event WhatsApp)\n" +
 		"m   : *waE2E.Message   (raw message protobuf)\n" +
 		"db  : *helper.DatabaseManager\n\n" +

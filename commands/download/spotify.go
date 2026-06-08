@@ -11,8 +11,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -162,7 +162,7 @@ func sendSpotifyAudio(ctx *lib.CommandContext, data *SpotifyResponse) error {
 	}
 
 
-	uploadResp, err := ctx.Client.Upload(context.Background(), audioData, gowa.MediaAudio)
+	uploadResp, err := ctx.Client.Upload(context.Background(), audioData, whatsmeow.MediaAudio)
 	if err != nil {
 		return fmt.Errorf("failed to upload audio: %w", err)
 	}

@@ -11,8 +11,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"github.com/jrevanaldi-ai/gowa-bot/helper"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
@@ -97,7 +97,7 @@ func GitHubHandler(ctx *lib.CommandContext) error {
 	}
 
 	// 3. Upload to WhatsApp
-	uploadResp, err := ctx.Client.Upload(context.Background(), zipData, gowa.MediaDocument)
+	uploadResp, err := ctx.Client.Upload(context.Background(), zipData, whatsmeow.MediaDocument)
 	if err != nil {
 		return fmt.Errorf("failed to upload zip: %w", err)
 	}

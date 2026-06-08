@@ -9,17 +9,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/store/sqlstore"
-	"github.com/jrevanaldi-ai/gowa/types/events"
-	waLog "github.com/jrevanaldi-ai/gowa/util/log"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store/sqlstore"
+	"go.mau.fi/whatsmeow/types/events"
+	waLog "go.mau.fi/whatsmeow/util/log"
 	"github.com/jrevanaldi-ai/gowa-bot/lib"
 )
 
 
 type JadibotInstance struct {
 	ID         string
-	Client     *gowa.Client
+	Client     *whatsmeow.Client
 	BotClient  lib.BotClientInterface
 	Info       JadibotInfo
 	CancelFunc context.CancelFunc
@@ -30,7 +30,7 @@ type JadibotInstance struct {
 type JadibotSessionManager struct {
 	DBManager     *DatabaseManager
 	Registry      *lib.CommandRegistry
-	ClientFactory func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface
+	ClientFactory func(registry *lib.CommandRegistry, owners []string, gowaClient *whatsmeow.Client) lib.BotClientInterface
 	ActiveBots    map[string]*JadibotInstance
 	Logger        *Logger
 	GowaLogger    waLog.Logger
@@ -38,7 +38,7 @@ type JadibotSessionManager struct {
 }
 
 
-func NewJadibotSessionManager(dbManager *DatabaseManager, registry *lib.CommandRegistry, gowaLogger waLog.Logger, logger *Logger, clientFactory func(registry *lib.CommandRegistry, owners []string, gowaClient *gowa.Client) lib.BotClientInterface) *JadibotSessionManager {
+func NewJadibotSessionManager(dbManager *DatabaseManager, registry *lib.CommandRegistry, gowaLogger waLog.Logger, logger *Logger, clientFactory func(registry *lib.CommandRegistry, owners []string, gowaClient *whatsmeow.Client) lib.BotClientInterface) *JadibotSessionManager {
 	return &JadibotSessionManager{
 		DBManager:     dbManager,
 		Registry:      registry,
@@ -129,7 +129,7 @@ func (m *JadibotSessionManager) StartJadibot(ctx context.Context, jadibotID stri
 	}
 
 
-	cli := gowa.NewClient(device, m.GowaLogger)
+	cli := whatsmeow.NewClient(device, m.GowaLogger)
 
 
 	if err := cli.Connect(); err != nil {
@@ -171,7 +171,7 @@ func (m *JadibotSessionManager) StartJadibot(ctx context.Context, jadibotID stri
 
 
 	time.Sleep(1 * time.Second)
-	pairingCode, err := cli.PairPhone(ctx, phoneNumber, true, gowa.PairClientChrome, "Chrome (Linux)")
+	pairingCode, err := cli.PairPhone(ctx, phoneNumber, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
 	if err != nil {
 		cli.Disconnect()
 		return "", fmt.Errorf("failed to pair phone: %w", err)
@@ -375,7 +375,7 @@ func (m *JadibotSessionManager) ResumeJadibot(ctx context.Context, jadibotID str
 	}
 
 
-	cli := gowa.NewClient(device, m.GowaLogger)
+	cli := whatsmeow.NewClient(device, m.GowaLogger)
 
 
 	if err := cli.Connect(); err != nil {

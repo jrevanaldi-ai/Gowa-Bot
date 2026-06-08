@@ -7,9 +7,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/jrevanaldi-ai/gowa"
-	"github.com/jrevanaldi-ai/gowa/proto/waE2E"
-	"github.com/jrevanaldi-ai/gowa/types"
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/types"
 )
 
 
@@ -22,7 +22,7 @@ type GroupConfig struct {
 
 
 type EphemeralHelper struct {
-	client      *gowa.Client
+	client      *whatsmeow.Client
 	cache       map[types.JID]*GroupConfig
 	cacheExpiry time.Duration
 	mu          sync.RWMutex
@@ -30,7 +30,7 @@ type EphemeralHelper struct {
 }
 
 
-func NewEphemeralHelper(client *gowa.Client, cacheExpiry time.Duration) *EphemeralHelper {
+func NewEphemeralHelper(client *whatsmeow.Client, cacheExpiry time.Duration) *EphemeralHelper {
 	return &EphemeralHelper{
 		client:      client,
 		cache:       make(map[types.JID]*GroupConfig),
@@ -40,7 +40,7 @@ func NewEphemeralHelper(client *gowa.Client, cacheExpiry time.Duration) *Ephemer
 }
 
 
-func (h *EphemeralHelper) SetClient(client *gowa.Client) {
+func (h *EphemeralHelper) SetClient(client *whatsmeow.Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.client = client
@@ -170,10 +170,58 @@ func (h *EphemeralHelper) WrapMessageWithEphemeral(ctx context.Context, jid type
 			if message.ExtendedTextMessage.ContextInfo.Participant != nil {
 				wrappedMessage.ExtendedTextMessage.ContextInfo.Participant = message.ExtendedTextMessage.ContextInfo.Participant
 			}
+			if message.ExtendedTextMessage.ContextInfo.RemoteJID != nil {
+				wrappedMessage.ExtendedTextMessage.ContextInfo.RemoteJID = message.ExtendedTextMessage.ContextInfo.RemoteJID
+			}
+			if message.ExtendedTextMessage.ContextInfo.QuotedMessage != nil {
+				wrappedMessage.ExtendedTextMessage.ContextInfo.QuotedMessage = message.ExtendedTextMessage.ContextInfo.QuotedMessage
+			}
+			if len(message.ExtendedTextMessage.ContextInfo.MentionedJID) > 0 {
+				wrappedMessage.ExtendedTextMessage.ContextInfo.MentionedJID = message.ExtendedTextMessage.ContextInfo.MentionedJID
+			}
+			if len(message.ExtendedTextMessage.ContextInfo.GroupMentions) > 0 {
+				wrappedMessage.ExtendedTextMessage.ContextInfo.GroupMentions = message.ExtendedTextMessage.ContextInfo.GroupMentions
+			}
 			if message.ExtendedTextMessage.ContextInfo.ExternalAdReply != nil {
 				wrappedMessage.ExtendedTextMessage.ContextInfo.ExternalAdReply = message.ExtendedTextMessage.ContextInfo.ExternalAdReply
 			}
 		}
+		if message.ExtendedTextMessage.MatchedText != nil {
+			wrappedMessage.ExtendedTextMessage.MatchedText = message.ExtendedTextMessage.MatchedText
+		}
+		if message.ExtendedTextMessage.Title != nil {
+			wrappedMessage.ExtendedTextMessage.Title = message.ExtendedTextMessage.Title
+		}
+		if message.ExtendedTextMessage.Description != nil {
+			wrappedMessage.ExtendedTextMessage.Description = message.ExtendedTextMessage.Description
+		}
+		if message.ExtendedTextMessage.PreviewType != nil {
+			wrappedMessage.ExtendedTextMessage.PreviewType = message.ExtendedTextMessage.PreviewType
+		}
+		if len(message.ExtendedTextMessage.JPEGThumbnail) > 0 {
+			wrappedMessage.ExtendedTextMessage.JPEGThumbnail = message.ExtendedTextMessage.JPEGThumbnail
+		}
+	} else if message.ImageMessage != nil {
+		if message.ImageMessage.ContextInfo == nil {
+			message.ImageMessage.ContextInfo = &waE2E.ContextInfo{}
+		}
+		message.ImageMessage.ContextInfo.Expiration = &config.DisappearingTimer
+		message.ImageMessage.ContextInfo.EphemeralSettingTimestamp = proto.Int64(time.Now().UnixMilli())
+		return message, nil
+	} else if message.VideoMessage != nil {
+		if message.VideoMessage.ContextInfo == nil {
+			message.VideoMessage.ContextInfo = &waE2E.ContextInfo{}
+		}
+		message.VideoMessage.ContextInfo.Expiration = &config.DisappearingTimer
+		message.VideoMessage.ContextInfo.EphemeralSettingTimestamp = proto.Int64(time.Now().UnixMilli())
+		return message, nil
+	} else if message.DocumentMessage != nil {
+		if message.DocumentMessage.ContextInfo == nil {
+			message.DocumentMessage.ContextInfo = &waE2E.ContextInfo{}
+		}
+		message.DocumentMessage.ContextInfo.Expiration = &config.DisappearingTimer
+		message.DocumentMessage.ContextInfo.EphemeralSettingTimestamp = proto.Int64(time.Now().UnixMilli())
+		return message, nil
 	} else {
 
 		return &waE2E.Message{

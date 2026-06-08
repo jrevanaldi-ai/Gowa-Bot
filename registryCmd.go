@@ -26,7 +26,11 @@ func registerCommands(registry *lib.CommandRegistry) {
 
 	registry.Register(general.LuneMetadata, general.LuneHandler)
 
+	registry.Register(general.WelcomeMetadata, general.WelcomeHandler)
+	registry.Register(general.GoodbyeMetadata, general.GoodbyeHandler)
+
 	registry.Register(debug.CheckEphemeralMetadata, debug.CheckEphemeralHandler)
+	registry.Register(debug.TagTestMetadata, debug.TagTestHandler)
 
 	registry.Register(owner.ExecMetadata, owner.ExecHandler)
 	registry.Register(owner.EvalMetadata, owner.EvalHandler)
